@@ -1,0 +1,14 @@
+{
+  "name": "Patrick CRM",
+  "short_name": "Patrick CRM",
+  "description": "Personal CRM for Dojou Media, Simplify Living & Street Characters",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1117",
+  "theme_color": "#0f1117",
+  "icons": [
+    { "src": "icon.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

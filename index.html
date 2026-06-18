@@ -1,0 +1,3016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Patrick CRM</title>
+<!-- PWA: Install as app on phone -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Patrick CRM">
+<meta name="theme-color" content="#0f1117">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3250;
+    --text: #e8eaf6;
+    --text-muted: #7b82b0;
+    --accent: #6c63ff;
+    --accent-hover: #7c74ff;
+
+    --dojou: #00c6ff;
+    --simplify: #43e97b;
+    --sci: #f7971e;
+
+    --col-pending: #6b7280;
+    --col-inprogress: #6c63ff;
+    --col-pendingqc: #f59e0b;
+    --col-delivered: #00c6ff;
+    --col-revision: #f7971e;
+    --col-done: #43e97b;
+    --col-holding: #a855f7;
+
+    --red: #ff5c7a;
+    --yellow: #f7971e;
+    --green: #43e97b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .logo {
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .logo svg { width: 148px; height: auto; }
+
+  .nav-section {
+    padding: 16px 12px 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    margin: 1px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--accent); color: #fff; }
+  .nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+  .client-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .sidebar-footer strong { display: block; color: var(--text); margin-bottom: 2px; }
+
+  /* ── MAIN ── */
+  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  #topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  #topbar h1 { font-size: 17px; font-weight: 700; }
+
+  .btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn:hover { background: var(--accent-hover); }
+  .btn.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn.secondary:hover { background: var(--border); }
+  .btn.danger { background: #ff5c7a18; color: var(--red); border: 1px solid #ff5c7a33; }
+  .btn.danger:hover { background: #ff5c7a33; }
+  .btn.small { padding: 4px 9px; font-size: 11px; border-radius: 6px; }
+  .btn.xs { padding: 3px 7px; font-size: 11px; border-radius: 5px; }
+
+  /* ── PAGE VISIBILITY ── */
+  .page { display: none; overflow: hidden; flex: 1; flex-direction: column; }
+  .page.active { display: flex; }
+
+  /* Scroll pages (dashboard, money, integrations) use block layout with vertical scroll */
+  .page.scroll-page { flex-direction: column; }
+  .page.scroll-page.active { display: block; overflow-y: auto; padding: 24px; }
+
+  /* ── DASHBOARD ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .stat-card .label { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .value { font-size: 26px; font-weight: 700; }
+  .stat-card .sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; }
+  .card-title { font-size: 13px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+  .task-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .task-item:last-child { border-bottom: none; }
+  .task-check { width: 17px; height: 17px; border: 2px solid var(--border); border-radius: 50%; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .task-check:hover { border-color: var(--accent); }
+  .task-check.checked { background: var(--accent); border-color: var(--accent); }
+  .task-check.checked::after { content: '✓'; font-size: 9px; color: #fff; }
+  .task-body { flex: 1; }
+  .task-body .task-title { font-size: 13px; }
+  .task-body .task-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; display: flex; gap: 8px; }
+  .client-badge { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+  .client-dojou { background: #00c6ff18; color: var(--dojou); border: 1px solid #00c6ff44; }
+  .client-simplify { background: #43e97b18; color: var(--simplify); border: 1px solid #43e97b44; }
+  .client-sci { background: #f7971e18; color: var(--sci); border: 1px solid #f7971e44; }
+  .priority-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .priority-high { background: var(--red); }
+  .priority-medium { background: var(--yellow); }
+  .priority-low { background: var(--green); }
+  .text-green { color: var(--green); }
+  .text-yellow { color: var(--yellow); }
+  .text-red { color: var(--red); }
+  .text-blue { color: var(--dojou); }
+  .amount { font-weight: 700; font-family: monospace; }
+  .amount.done { color: var(--green); }
+  .amount.in-progress { color: var(--yellow); }
+  .amount.revision { color: var(--red); }
+
+  /* ── KANBAN ── */
+  .kanban-wrap {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 20px 24px;
+    display: flex;
+    gap: 14px;
+  }
+
+  .kanban-col {
+    min-width: 248px;
+    max-width: 248px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .kanban-col.drag-over {
+    border-color: var(--accent);
+    background: #6c63ff0a;
+  }
+
+  .kanban-col-header {
+    padding: 13px 14px 11px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .col-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .col-label { font-size: 13px; font-weight: 700; flex: 1; }
+  .col-count {
+    background: var(--surface2);
+    border-radius: 20px;
+    padding: 1px 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .kanban-col-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .kanban-col-footer {
+    padding: 8px 10px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .col-add-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+    border-radius: 7px;
+    padding: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .col-add-btn:hover { border-color: var(--accent); color: var(--accent); background: #6c63ff0d; }
+
+  /* ── KANBAN CARDS ── */
+  .k-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 11px 12px;
+    cursor: grab;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+    user-select: none;
+  }
+  .k-card:hover { border-color: #4a4f7a; box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
+  .k-card.dragging { opacity: 0.45; transform: rotate(2deg); cursor: grabbing; }
+  .k-card.drag-placeholder { border: 2px dashed var(--accent); background: #6c63ff0a; min-height: 60px; }
+
+  .k-card-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; line-height: 1.35; }
+  .k-card-meta { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-bottom: 6px; }
+  .k-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .k-card-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+  .k-card:hover .k-card-actions { opacity: 1; }
+
+  .tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .tag-type { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+  .tag-priority-high { background: #ff5c7a18; color: var(--red); border: 1px solid #ff5c7a44; }
+  .tag-priority-medium { background: #f7971e18; color: var(--yellow); border: 1px solid #f7971e44; }
+  .tag-priority-low { background: #43e97b18; color: var(--green); border: 1px solid #43e97b44; }
+  .tag-amount { background: var(--surface); color: var(--text); border: 1px solid var(--border); font-family: monospace; font-size: 11px; }
+
+  .deadline-text { font-size: 10px; }
+  .deadline-ok { color: var(--text-muted); }
+  .deadline-soon { color: var(--yellow); }
+  .deadline-overdue { color: var(--red); }
+
+  /* ── KANBAN PAGE WITH SUBFILTER BAR ── */
+  .kanban-page-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px 0;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .filter-btn:hover, .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── SCI HEADER ── */
+  .sci-header {
+    margin: 20px 24px 0;
+    background: linear-gradient(135deg, #f7971e18, #ffd20018);
+    border: 1px solid #f7971e44;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+  .sci-header .sci-logo { font-size: 28px; }
+  .sci-header h2 { font-size: 17px; font-weight: 700; }
+  .sci-header p { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+  .client-header {
+    margin: 20px 24px 0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+  .client-header .ch-logo { font-size: 24px; }
+  .client-header h2 { font-size: 17px; font-weight: 700; }
+  .client-header p { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+  /* ── MODAL ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 26px; width: 540px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { font-size: 16px; font-weight: 700; margin-bottom: 18px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.15s; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+  .form-group textarea { resize: vertical; min-height: 75px; }
+  .form-group select option { background: var(--surface); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ── TOAST ── */
+  #toast { position: fixed; bottom: 22px; right: 22px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 11px 18px; border-radius: 10px; font-size: 13px; z-index: 999; opacity: 0; transform: translateY(8px); transition: all 0.22s; pointer-events: none; }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  .topbar-right { display: flex; gap: 8px; }
+  .empty-col { color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px 10px; line-height: 1.5; }
+
+  /* ── INTEGRATIONS ── */
+  .int-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .int-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+  }
+  .int-icon { font-size: 22px; }
+  .int-name { font-size: 14px; font-weight: 700; }
+  .int-desc { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .int-pill {
+    margin-left: auto; font-size: 10px; font-weight: 700; padding: 3px 10px;
+    border-radius: 20px; white-space: nowrap;
+  }
+  .int-connected    { background: #43e97b18; color: var(--green); border: 1px solid #43e97b44; }
+  .int-disconnected { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+  .int-syncing      { background: #6c63ff18; color: var(--accent); border: 1px solid #6c63ff44; }
+  .sync-log {
+    font-size: 11px; color: var(--text-muted); margin-top: 10px; line-height: 1.7;
+    max-height: 100px; overflow-y: auto; background: var(--bg);
+    border-radius: 6px; padding: 8px 10px; display: none;
+  }
+  .sync-log.show { display: block; }
+  .source-badge {
+    font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 3px;
+    background: #6c63ff22; color: var(--accent); border: 1px solid #6c63ff44;
+    vertical-align: middle; margin-left: 4px;
+  }
+
+  /* ── MONEY & BILLS ── */
+
+  .money-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .money-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .money-card .m-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .money-card .m-value { font-size: 24px; font-weight: 800; }
+  .money-card .m-sub   { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  .money-section-title {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .bill-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 0; border-bottom: 1px solid var(--border);
+  }
+  .bill-row:last-child { border-bottom: none; }
+  .bill-icon { font-size: 18px; width: 28px; text-align: center; flex-shrink: 0; }
+  .bill-info { flex: 1; }
+  .bill-info .bill-name { font-size: 13px; font-weight: 600; }
+  .bill-info .bill-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; display: flex; gap: 8px; }
+  .bill-amount { font-size: 14px; font-weight: 700; font-family: monospace; }
+  .bill-status-badge {
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+    white-space: nowrap;
+  }
+  .bill-paid    { background: #43e97b18; color: var(--green); border: 1px solid #43e97b44; }
+  .bill-unpaid  { background: #f7971e18; color: var(--yellow); border: 1px solid #f7971e44; }
+  .bill-overdue { background: #ff5c7a18; color: var(--red);    border: 1px solid #ff5c7a44; }
+
+  .savings-bar-wrap {
+    background: var(--surface2);
+    border-radius: 6px;
+    height: 8px;
+    margin: 10px 0 4px;
+    overflow: hidden;
+  }
+  .savings-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--accent), var(--col-delivered));
+    transition: width 0.5s;
+  }
+
+  .income-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .income-row:last-child { border-bottom: none; }
+
+  .exrate-badge {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 12px; font-size: 12px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .exrate-badge input {
+    background: transparent; border: none; color: var(--accent);
+    font-weight: 700; font-size: 13px; width: 60px; outline: none;
+    font-family: inherit;
+  }
+
+  /* ── MONEY CALENDAR ── */
+  .cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .cal-nav-title { font-size:15px; font-weight:700; }
+  .cal-nav button { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:4px 12px; cursor:pointer; font-size:13px; color:var(--text); }
+  .cal-nav button:hover { background:var(--surface); }
+  .cal-dow-row { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:3px; }
+  .cal-dow-cell { text-align:center; font-size:10px; font-weight:600; color:var(--text-muted); padding:4px 0; text-transform:uppercase; letter-spacing:.4px; }
+  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+  .cal-cell {
+    min-height:110px; background:var(--surface); border:1px solid var(--border);
+    border-radius:8px; padding:7px 8px; cursor:pointer; transition:border-color .15s;
+    overflow:hidden;
+  }
+  .cal-cell:hover { border-color:var(--accent); }
+  .cal-cell.empty { background:transparent; border-color:transparent; cursor:default; }
+  .cal-cell.today { border:2px solid var(--accent); }
+  .cal-cell.selected { border:2px solid #6c63ff; background:var(--surface2); }
+  .cal-day-num { font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:5px; }
+  .cal-cell.today .cal-day-num { color:var(--accent); }
+  .cal-dots { display:flex; flex-wrap:wrap; gap:2px; }
+  .cal-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .cal-pill-sm { font-size:10px; padding:2px 6px; border-radius:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; display:block; margin-bottom:2px; line-height:1.4; }
+
+  /* Day detail panel */
+  .day-panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 18px; margin-top:14px; }
+  .day-panel-title { font-size:14px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
+  .day-bill-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+  .day-bill-row:last-child { border-bottom:none; }
+  .day-bill-name { flex:1; font-size:13px; font-weight:600; }
+  .day-bill-note { font-size:11px; color:var(--text-muted); }
+  .day-bill-amt { font-size:14px; font-weight:700; font-family:monospace; }
+  .day-bill-amt input { width:90px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:3px 7px; font-size:13px; font-weight:700; font-family:monospace; color:var(--text); text-align:right; }
+  .day-bill-status { font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; border:none; cursor:pointer; }
+  .status-unpaid  { background:#f7971e18; color:var(--yellow); border:1px solid #f7971e44; }
+  .status-paid    { background:#43e97b18; color:var(--green);  border:1px solid #43e97b44; }
+  .status-overdue { background:#ff5c7a18; color:var(--red);    border:1px solid #ff5c7a44; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="logo">
+    <svg viewBox="0 0 192 78" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Captain Daddy">
+      <rect width="192" height="78" rx="4" fill="#000"/>
+
+      <!-- CAPTAIN: CAPTA + bolt + N -->
+      <text x="4" y="38" font-family="Impact,'Arial Black',sans-serif" font-size="38" fill="#fff" letter-spacing="0.5">CAPTA</text>
+      <text x="156" y="38" font-family="Impact,'Arial Black',sans-serif" font-size="38" fill="#fff">N</text>
+
+      <!-- DADDY: DAD + bolt + Y (letter-spacing widens to match CAPTAIN) -->
+      <text x="4" y="73" font-family="Impact,'Arial Black',sans-serif" font-size="38" fill="#fff" letter-spacing="5.5">DAD</text>
+      <text x="156" y="73" font-family="Impact,'Arial Black',sans-serif" font-size="38" fill="#fff">Y</text>
+
+      <!-- Top lightning bolt (replaces I in CAPTAIN) -->
+      <polygon points="146,2 136,34 144,34 132,48 156,16 147,16 157,2"
+               fill="#F5C518" stroke="#FFE878" stroke-width="1.2" stroke-linejoin="round"/>
+
+      <!-- Bottom lightning bolt (replaces D in DADDY) -->
+      <polygon points="150,40 140,72 148,72 136,78 160,54 151,54 161,40"
+               fill="#F5C518" stroke="#FFE878" stroke-width="1.2" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div class="nav-section">Main</div>
+  <div class="nav-item active" data-page="dashboard"><span class="icon">📊</span> Dashboard</div>
+  <div class="nav-section">Clients</div>
+  <div class="nav-item" data-page="client-dojou"><span class="client-dot" style="background:var(--dojou)"></span> Dojou Media</div>
+  <div class="nav-item" data-page="client-simplify"><span class="client-dot" style="background:var(--simplify)"></span> Simplify Living</div>
+  <div class="nav-section">Marketing</div>
+  <div class="nav-item" data-page="sci"><span class="icon">🎭</span> Street Characters</div>
+  <div class="nav-section">Finance</div>
+  <div class="nav-item" data-page="money"><span class="icon">🏦</span> Money & Bills</div>
+  <div class="nav-section">Settings</div>
+  <div class="nav-item" data-page="integrations"><span class="icon">⚙️</span> Integrations</div>
+  <div class="sidebar-footer">
+    <strong>Patrick Angeles</strong>
+    Video Editor & Marketer
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <h1 id="page-title">Dashboard</h1>
+    <div class="topbar-right">
+      <button class="btn secondary small" id="sync-btn" onclick="quickSync()" title="Sync ClickUp" style="display:none;">🔄 Sync</button>
+      <button class="btn secondary small" onclick="exportData()">⬇ Export</button>
+      <button class="btn secondary small" onclick="navigateTo('integrations')" title="Integrations">⚙️</button>
+      <button class="btn" id="add-btn" onclick="openAddModal()">+ Add</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page scroll-page active" id="page-dashboard">
+    <!-- Month balance banner -->
+    <div id="dash-balance" style="margin-bottom:16px;"></div>
+    <!-- Top 4 money stats -->
+    <div class="money-grid" id="dash-stats" style="margin-bottom:20px;"></div>
+    <!-- Main 2-column grid -->
+    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:start;">
+      <!-- Left: client task cards -->
+      <div style="display:flex;flex-direction:column;gap:14px;" id="dash-clients"></div>
+      <!-- Right: money summary + upcoming -->
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card" id="dash-money"></div>
+        <div class="card" id="dash-upcoming"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROJECTS KANBAN -->
+  <div class="page" id="page-projects">
+    <div class="kanban-page-header">
+      <button class="filter-btn active" data-filter="all">All Clients</button>
+      <button class="filter-btn" data-filter="Dojou Media">🔵 Dojou Media</button>
+      <button class="filter-btn" data-filter="Simplify Living">🟢 Simplify Living</button>
+      <button class="filter-btn" data-filter="Street Characters">🟠 Street Characters</button>
+    </div>
+    <div class="kanban-wrap" id="projects-board"></div>
+  </div>
+
+  <!-- TASKS KANBAN -->
+  <div class="page" id="page-tasks">
+    <div class="kanban-page-header">
+      <button class="filter-btn active" data-filter="all">All Clients</button>
+      <button class="filter-btn" data-filter="Dojou Media">🔵 Dojou Media</button>
+      <button class="filter-btn" data-filter="Simplify Living">🟢 Simplify Living</button>
+      <button class="filter-btn" data-filter="Street Characters">🟠 Street Characters</button>
+      <button class="filter-btn" data-filter="General">⚪ Admin</button>
+    </div>
+    <div class="kanban-wrap" id="tasks-board"></div>
+  </div>
+
+  <!-- COMMUNICATION KANBAN -->
+  <div class="page" id="page-communication">
+    <div class="kanban-page-header">
+      <button class="filter-btn active" data-filter="all">All Clients</button>
+      <button class="filter-btn" data-filter="Dojou Media">🔵 Dojou Media</button>
+      <button class="filter-btn" data-filter="Simplify Living">🟢 Simplify Living</button>
+      <button class="filter-btn" data-filter="Street Characters">🟠 Street Characters</button>
+    </div>
+    <div class="kanban-wrap" id="comm-board"></div>
+  </div>
+
+  <!-- CLIENT: DOJOU -->
+  <div class="page" id="page-client-dojou">
+    <div class="client-header" style="background:linear-gradient(135deg,#00c6ff18,#0072ff18);border:1px solid #00c6ff44;">
+      <div class="ch-logo">🎬</div>
+      <div><h2 style="color:var(--dojou)">Dojou Media</h2><p>Video Editing Client</p></div>
+    </div>
+    <div class="kanban-wrap" id="dojou-board"></div>
+  </div>
+
+  <!-- CLIENT: SIMPLIFY -->
+  <div class="page" id="page-client-simplify">
+    <div class="client-header" style="background:linear-gradient(135deg,#43e97b18,#38f9d718);border:1px solid #43e97b44;">
+      <div class="ch-logo">🌿</div>
+      <div><h2 style="color:var(--simplify)">Simplify Living</h2><p>Video Editing Client</p></div>
+    </div>
+    <div class="kanban-wrap" id="simplify-board"></div>
+  </div>
+
+  <!-- SCI PAGE -->
+  <div class="page" id="page-sci">
+    <div class="sci-header">
+      <div class="sci-logo">🎭</div>
+      <div><h2 style="color:var(--sci)">Street Characters Inc.</h2><p>mascots.com — All-in-one Marketing</p></div>
+    </div>
+    <div class="kanban-wrap" id="sci-board"></div>
+  </div>
+
+  <!-- INTEGRATIONS PAGE -->
+  <div class="page scroll-page" id="page-integrations">
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Connect your clients' tools to automatically pull tasks into your CRM. Read-only — they see nothing on their end.</p>
+
+    <!-- ClickUp -->
+    <div class="int-block">
+      <div class="int-header">
+        <div class="int-icon">📋</div>
+        <div>
+          <div class="int-name">ClickUp <span style="font-size:11px;color:var(--simplify);font-weight:400;">— Simplify Living</span></div>
+          <div class="int-desc">Pulls tasks assigned to you into the Simplify Living column</div>
+        </div>
+        <span class="int-pill" id="cu-status-pill">Checking…</span>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Personal API Token</label>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="cu-token-input" placeholder="pk_xxxxxxxx_…" style="flex:1;" />
+          <button class="btn secondary small" onclick="toggleTokenVisibility()">👁</button>
+          <button class="btn secondary small" onclick="saveClickUpToken()">Save</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:5px;">ClickUp → Profile avatar → Settings → Apps → Copy API Token. Keep this private.</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn" onclick="runClickUpSync()">🔄 Sync Now</button>
+        <span id="cu-last-sync-label" style="font-size:11px;color:var(--text-muted);"></span>
+      </div>
+      <div class="sync-log" id="cu-sync-log"></div>
+    </div>
+
+    <!-- Dojou -->
+    <div class="int-block">
+      <div class="int-header">
+        <div class="int-icon">🎬</div>
+        <div>
+          <div class="int-name">Dojou Media CRM <span style="font-size:11px;color:var(--dojou);font-weight:400;">— crm.dojoumedia.com</span></div>
+          <div class="int-desc">Sync tasks assigned to you from the Dojou board</div>
+        </div>
+        <span class="int-pill int-disconnected" id="dojou-status-pill">Login required</span>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Dojou Session Cookie <span style="font-weight:400;color:var(--text-muted);">(from your browser)</span></label>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="dojou-session-cookie" placeholder="Paste dojou_session value here…" style="flex:1;font-family:monospace;font-size:11px;" />
+          <button class="btn secondary small" onclick="toggleDojouVisibility()">👁</button>
+          <button class="btn secondary small" onclick="saveDojouCreds()">Save</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.6;">
+          How to get this: Go to <b>crm.dojoumedia.com</b> (logged in) → DevTools (F12) → <b>Application</b> tab → <b>Cookies</b> → <b>crm.dojoumedia.com</b> → copy the value of <b>dojou_session</b> → paste above.<br>
+          Stored only on your computer. Valid for ~1 year before needing a refresh.
+        </div>
+        <span id="dojou-token-expiry" style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;"></span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn" onclick="runDojouSync()">🔄 Sync Now</button>
+        <span id="dojou-last-sync-label" style="font-size:11px;color:var(--text-muted);"></span>
+      </div>
+      <div class="sync-log" id="dojou-sync-log"></div>
+    </div>
+
+    <!-- Street Characters note -->
+    <div class="int-block" style="opacity:0.6;">
+      <div class="int-header">
+        <div class="int-icon">🎭</div>
+        <div>
+          <div class="int-name">Street Characters</div>
+          <div class="int-desc">Tasks are managed directly inside this CRM</div>
+        </div>
+        <span class="int-pill int-connected">Built-in ✓</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONEY & BILLS PAGE -->
+  <div class="page scroll-page" id="page-money">
+
+    <!-- Month balance warning -->
+    <div id="month-balance-banner" style="display:none;margin-bottom:16px;"></div>
+
+    <!-- Summary stats -->
+    <div class="money-grid" id="money-stats"></div>
+
+    <!-- Controls bar -->
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;">
+      <div class="exrate-badge">💱 $1 = ₱<input type="number" id="exrate-input" value="56" min="1" step="0.5" onchange="saveExRate();renderMoneyPage()" /></div>
+      <button class="btn secondary small" onclick="fetchLiveRate()" id="rate-refresh-btn" title="Fetch live rate from Wise/Frankfurter">🔄 Live Rate</button>
+      <span style="font-size:11px;color:var(--text-muted);" id="exrate-note"></span>
+      <button class="btn secondary small" onclick="openBillModal()" style="margin-left:auto;">+ Add Bill</button>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="cal-nav">
+        <button onclick="calPrev()">← Prev</button>
+        <div class="cal-nav-title" id="cal-title"></div>
+        <button onclick="calNext()">Next →</button>
+      </div>
+      <div class="cal-dow-row">
+        <div class="cal-dow-cell">Sun</div><div class="cal-dow-cell">Mon</div>
+        <div class="cal-dow-cell">Tue</div><div class="cal-dow-cell">Wed</div>
+        <div class="cal-dow-cell">Thu</div><div class="cal-dow-cell">Fri</div>
+        <div class="cal-dow-cell">Sat</div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <!-- Day detail panel (shows when a day is clicked) -->
+      <div class="day-panel" id="day-panel" style="display:none;">
+        <div class="day-panel-title">
+          <span id="day-panel-title-text"></span>
+          <button class="btn secondary small" onclick="closeDayPanel()">✕ Close</button>
+        </div>
+        <div id="day-panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Income + Budget summary side by side -->
+    <div class="two-col" style="gap:20px;margin-bottom:20px;">
+      <div class="card">
+        <div class="money-section-title">
+          💵 Income Breakdown
+          <span style="font-size:11px;font-weight:400;color:var(--text-muted)">from active billing</span>
+        </div>
+        <div id="income-breakdown"></div>
+      </div>
+      <div class="card">
+        <div class="money-section-title">📊 Budget Summary</div>
+        <div id="budget-summary"></div>
+      </div>
+    </div>
+
+    <!-- All bills list + Goals -->
+    <div class="two-col" style="gap:20px;">
+      <div class="card">
+        <div class="money-section-title">🧾 All Bills &amp; Installments</div>
+        <div id="bills-list"></div>
+      </div>
+      <div class="card">
+        <div class="money-section-title">
+          🎯 Savings Goals
+          <button class="btn secondary small" onclick="openGoalModal()">+ Add Goal</button>
+        </div>
+        <div id="goals-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Bill Modal -->
+<div class="modal-overlay" id="bill-modal">
+  <div class="modal">
+    <h2 id="bill-modal-title">New Bill</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Bill Name</label><input type="text" id="b-name" placeholder="e.g. Globe Internet" /></div>
+      <div class="form-group"><label>Category</label>
+        <select id="b-cat">
+          <option value="🌐 Internet">🌐 Internet</option>
+          <option value="📱 Phone">📱 Phone</option>
+          <option value="🏠 Rent">🏠 Rent</option>
+          <option value="💡 Utilities">💡 Utilities</option>
+          <option value="🎬 Subscriptions">🎬 Subscriptions</option>
+          <option value="🍔 Food">🍔 Food</option>
+          <option value="🚗 Transport">🚗 Transport</option>
+          <option value="💊 Health">💊 Health</option>
+          <option value="👨‍👩‍👧 Family">👨‍👩‍👧 Family</option>
+          <option value="📦 Other">📦 Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Amount (₱)</label><input type="number" id="b-amount" placeholder="0.00" min="0" step="0.01" /></div>
+      <div class="form-group"><label>Due Day of Month</label><input type="number" id="b-due-day" placeholder="e.g. 15" min="1" max="31" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Frequency</label>
+        <select id="b-freq">
+          <option value="monthly">Monthly (fixed date)</option>
+          <option value="last-friday">Monthly (last Friday)</option>
+          <option value="weekly">Weekly</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Status This Month</label>
+        <select id="b-status">
+          <option value="unpaid">Unpaid</option>
+          <option value="paid">Paid ✅</option>
+          <option value="overdue">Overdue ⚠</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Notes (optional)</label><input type="text" id="b-note" placeholder="e.g. Auto-debit from BDO" /></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal('bill-modal')">Cancel</button>
+      <button class="btn" onclick="saveBill()">Save Bill</button>
+    </div>
+  </div>
+</div>
+
+<!-- Goal Modal -->
+<div class="modal-overlay" id="goal-modal">
+  <div class="modal">
+    <h2 id="goal-modal-title">New Savings Goal</h2>
+    <div class="form-group"><label>Goal Name</label><input type="text" id="g-name" placeholder="e.g. Emergency Fund, New Laptop" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Target Amount (₱)</label><input type="number" id="g-target" placeholder="0.00" min="0" step="100" /></div>
+      <div class="form-group"><label>Saved So Far (₱)</label><input type="number" id="g-saved" placeholder="0.00" min="0" step="100" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Target Date</label><input type="date" id="g-date" /></div>
+      <div class="form-group"><label>Icon</label>
+        <select id="g-icon">
+          <option value="🎯">🎯 Goal</option>
+          <option value="💻">💻 Laptop / Tech</option>
+          <option value="🏍️">🏍️ Motorcycle</option>
+          <option value="✈️">✈️ Travel</option>
+          <option value="🏠">🏠 Home</option>
+          <option value="🚨">🚨 Emergency Fund</option>
+          <option value="🎓">🎓 Education</option>
+          <option value="💍">💍 Personal</option>
+          <option value="📷">📷 Camera / Gear</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal('goal-modal')">Cancel</button>
+      <button class="btn" onclick="saveGoal()">Save Goal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Project Modal -->
+<div class="modal-overlay" id="project-modal">
+  <div class="modal">
+    <h2 id="project-modal-title">New Project</h2>
+    <div class="form-group"><label>Project Name</label><input type="text" id="p-title" placeholder="e.g. March Brand Reel" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Client</label>
+        <select id="p-client">
+          <option value="Dojou Media">Dojou Media</option>
+          <option value="Simplify Living">Simplify Living</option>
+          <option value="Street Characters">Street Characters</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Column / Status</label>
+        <select id="p-status">
+          <option value="pending">Pending</option>
+          <option value="in-progress">In Progress</option>
+          <option value="pending-qc">QC</option>
+          <option value="holding">Holding</option>
+          <option value="delivered">Delivered</option>
+          <option value="revision">Revision</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Deadline</label><input type="date" id="p-deadline" /></div>
+      <div class="form-group"><label>Type</label>
+        <select id="p-type">
+          <option>Video Edit</option><option>Short Form</option><option>Long Form</option>
+          <option>Reel / TikTok</option><option>Social Post</option><option>Ad Campaign</option>
+          <option>Email Campaign</option><option>Content Calendar</option><option>Strategy</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="p-notes" placeholder="Revisions, references, special notes..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal('project-modal')">Cancel</button>
+      <button class="btn" onclick="saveProject()">Save Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <h2 id="task-modal-title">New Task</h2>
+    <div class="form-group"><label>Task</label><input type="text" id="t-title" placeholder="e.g. Cut raw footage for episode 5" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Client</label>
+        <select id="t-client">
+          <option value="Dojou Media">Dojou Media</option>
+          <option value="Simplify Living">Simplify Living</option>
+          <option value="Street Characters">Street Characters</option>
+          <option value="General">General / Admin</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Column / Status</label>
+        <select id="t-status">
+          <option value="pending">Pending</option>
+          <option value="in-progress">In Progress</option>
+          <option value="pending-qc">QC</option>
+          <option value="holding">Holding</option>
+          <option value="delivered">Delivered</option>
+          <option value="revision">Revision</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Priority</label>
+        <select id="t-priority"><option value="high">🔴 High</option><option value="medium">🟡 Medium</option><option value="low">🟢 Low</option></select>
+      </div>
+      <div class="form-group"><label>Due Date</label><input type="date" id="t-due" /></div>
+    </div>
+    <div class="form-group"><label>Linked Project</label><input type="text" id="t-project" placeholder="Project name (optional)" /></div>
+    <div class="form-group"><label>Notes</label><textarea id="t-notes" placeholder="Extra details..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal('task-modal')">Cancel</button>
+      <button class="btn" onclick="saveTask()">Save Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Communication Modal -->
+<div class="modal-overlay" id="note-modal">
+  <div class="modal">
+    <h2 id="note-modal-title">New Communication Log</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Client</label>
+        <select id="n-client">
+          <option value="Dojou Media">Dojou Media</option>
+          <option value="Simplify Living">Simplify Living</option>
+          <option value="Street Characters">Street Characters</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Column / Status</label>
+        <select id="n-status">
+          <option value="pending">Pending (Need to Follow Up)</option>
+          <option value="in-progress">In Progress (Ongoing)</option>
+          <option value="delivered">Delivered (Sent/Shared)</option>
+          <option value="revision">Revision (Awaiting Feedback)</option>
+          <option value="done">Done (Resolved)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Type</label>
+        <select id="n-type">
+          <option>Message</option><option>Call</option><option>Email</option>
+          <option>Meeting</option><option>Feedback</option><option>Revision Request</option><option>Approval ✅</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Date</label><input type="date" id="n-date" /></div>
+    </div>
+    <div class="form-group"><label>Linked Project</label><input type="text" id="n-project" placeholder="Project name (optional)" /></div>
+    <div class="form-group"><label>Notes / Summary</label><textarea id="n-text" placeholder="What was discussed, agreed, or decided..." style="min-height:100px;"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal('note-modal')">Cancel</button>
+      <button class="btn" onclick="saveNote()">Save Log</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────────
+const DB = {
+  load(k) { try { return JSON.parse(localStorage.getItem('pcrm4_' + k) || '[]'); } catch { return []; } },
+  save(k, v) { localStorage.setItem('pcrm4_' + k, JSON.stringify(v)); }
+};
+
+let projects  = DB.load('projects');
+let tasks     = DB.load('tasks');
+let notes     = DB.load('notes');
+
+let editingId   = null;
+let editingType = null;
+let currentPage = 'dashboard';
+let boardFilters = { projects: 'all', tasks: 'all', comm: 'all' };
+
+// drag state
+let dragId   = null;
+let dragType = null;
+
+// ─── COLUMNS ──────────────────────────────────────────────────────────────
+const COLS = [
+  { id: 'pending',     label: 'Pending',     color: 'var(--col-pending)' },
+  { id: 'in-progress', label: 'In Progress', color: 'var(--col-inprogress)' },
+  { id: 'pending-qc',  label: 'QC',          color: 'var(--col-pendingqc)' },
+  { id: 'holding',     label: 'Holding',     color: 'var(--col-holding)' },
+  { id: 'delivered',   label: 'Delivered',   color: 'var(--col-delivered)' },
+  { id: 'revision',    label: 'Revision',    color: 'var(--col-revision)' },
+  { id: 'done',        label: 'Done',        color: 'var(--col-done)' },
+];
+
+// ─── SEED DATA ─────────────────────────────────────────────────────────────
+function seedData() {
+  if (projects.length === 0) {
+    projects = [
+      { id: uid(), title: 'Brand Intro Reel',         client: 'Dojou Media',      status: 'in-progress', type: 'Reel / TikTok',      deadline: fmtDate(4),  notes: '30-sec reel, 3 revision slots', created: Date.now() },
+      { id: uid(), title: 'YouTube Episode 12',        client: 'Dojou Media',      status: 'revision',    type: 'Long Form',           deadline: fmtDate(2),  notes: 'Client waiting for final cut',  created: Date.now() },
+      { id: uid(), title: 'Minimalism Home Tour',      client: 'Simplify Living',  status: 'in-progress', type: 'Video Edit',          deadline: fmtDate(8),  notes: 'B-roll in Drive',               created: Date.now() },
+      { id: uid(), title: 'Declutter Challenge Series',client: 'Simplify Living',  status: 'pending',     type: 'Short Form',          deadline: fmtDate(14), notes: '5-part series',                 created: Date.now() },
+      { id: uid(), title: 'Mascot Launch Campaign',    client: 'Street Characters',status: 'in-progress', type: 'Ad Campaign',         deadline: fmtDate(5),  notes: 'Social + email + landing page', created: Date.now() },
+      { id: uid(), title: 'Q3 Content Calendar',       client: 'Street Characters',status: 'pending',     type: 'Content Calendar',    deadline: fmtDate(21), notes: 'June–August planning',          created: Date.now() },
+      { id: uid(), title: 'EP13 Thumbnail Design',     client: 'Dojou Media',      status: 'delivered',   type: 'Other',               deadline: fmtDate(-1), notes: 'Sent for approval',             created: Date.now() },
+    ];
+    DB.save('projects', projects);
+  }
+  if (tasks.length === 0) {
+    tasks = [
+      { id: uid(), title: 'Export final cut EP12',      client: 'Dojou Media',      status: 'in-progress', priority: 'high',   due: fmtDate(1),  project: 'YouTube Episode 12',    notes: '', created: Date.now() },
+      { id: uid(), title: 'Send revision to client',    client: 'Dojou Media',      status: 'pending',     priority: 'high',   due: fmtDate(1),  project: 'Brand Intro Reel',      notes: '', created: Date.now() },
+      { id: uid(), title: 'Color grade home tour',      client: 'Simplify Living',  status: 'in-progress', priority: 'medium', due: fmtDate(3),  project: 'Minimalism Home Tour',  notes: '', created: Date.now() },
+      { id: uid(), title: 'Write June social captions', client: 'Street Characters',status: 'in-progress', priority: 'high',   due: fmtDate(2),  project: 'Mascot Launch Campaign',notes: '', created: Date.now() },
+      { id: uid(), title: 'Design email layout',        client: 'Street Characters',status: 'pending',     priority: 'medium', due: fmtDate(5),  project: 'Mascot Launch Campaign',notes: '', created: Date.now() },
+      { id: uid(), title: 'Sync files to backup drive', client: 'General',          status: 'pending',     priority: 'low',    due: fmtDate(7),  project: '',                      notes: '', created: Date.now() },
+      { id: uid(), title: 'EP12 thumbnail delivered',   client: 'Dojou Media',      status: 'delivered',   priority: 'medium', due: fmtDate(-1), project: 'EP13 Thumbnail Design', notes: '', created: Date.now() },
+    ];
+    DB.save('tasks', tasks);
+  }
+  if (notes.length === 0) {
+    notes = [
+      { id: uid(), client: 'Dojou Media',      type: 'Feedback',  status: 'revision',    date: fmtDate(-2), project: 'YouTube Episode 12',    text: 'Client loved the pacing but wants a longer intro. Approved color grade. Rev 2 of 3 used.', created: Date.now() },
+      { id: uid(), client: 'Simplify Living',  type: 'Meeting',   status: 'in-progress', date: fmtDate(-5), project: 'Minimalism Home Tour',  text: 'Video call — discussed B-roll order and thumbnail concept. Wants warm filter.', created: Date.now() },
+      { id: uid(), client: 'Street Characters',type: 'Approval ✅',status: 'done',        date: fmtDate(-1), project: 'Mascot Launch Campaign', text: 'CEO approved campaign brief and ad copy. Green light to execute. Budget ₱50,000.', created: Date.now() },
+    ];
+    DB.save('notes', notes);
+  }
+}
+
+// ─── UTILS ─────────────────────────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function fmtDate(offset = 0) { const d = new Date(); d.setDate(d.getDate() + offset); return d.toISOString().split('T')[0]; }
+function today() { return fmtDate(0); }
+function displayDate(s) { if (!s) return ''; const d = new Date(s + 'T00:00:00'); return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }); }
+function daysUntil(s) { if (!s) return null; return Math.ceil((new Date(s + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000); }
+function deadlineTag(s) {
+  if (!s) return '';
+  const d = daysUntil(s);
+  if (d < 0)  return `<span class="deadline-text deadline-overdue">⚠ ${Math.abs(d)}d overdue</span>`;
+  if (d === 0) return `<span class="deadline-text deadline-overdue">⚠ Due today</span>`;
+  if (d <= 3)  return `<span class="deadline-text deadline-soon">⏰ ${d}d left</span>`;
+  return `<span class="deadline-text deadline-ok">📅 ${displayDate(s)}</span>`;
+}
+function clientColor(c) {
+  if (c === 'Dojou Media') return 'var(--dojou)';
+  if (c === 'Simplify Living') return 'var(--simplify)';
+  return 'var(--sci)';
+}
+function clientClass(c) {
+  if (c === 'Dojou Media') return 'client-dojou';
+  if (c === 'Simplify Living') return 'client-simplify';
+  return 'client-sci';
+}
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ─── NAVIGATION ────────────────────────────────────────────────────────────
+const PAGE_TITLES = { dashboard:'Dashboard', projects:'Projects', tasks:'Tasks', communication:'Communication', 'client-dojou':'Dojou Media', 'client-simplify':'Simplify Living', sci:'Street Characters Inc.', money:'Money & Bills', integrations:'Integrations' };
+const ADD_LABELS  = { projects:'+ New Project', tasks:'+ New Task', communication:'+ Log', 'client-dojou':'+ Project', 'client-simplify':'+ Project', sci:'+ Task', money:'+ Bill', integrations:'+ (configure above)' };
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    currentPage = item.dataset.page;
+    // update sidebar highlight
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    // hide all pages, show only the target
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const target = document.getElementById('page-' + currentPage);
+    if (target) target.classList.add('active');
+    document.getElementById('page-title').textContent = PAGE_TITLES[currentPage] || '';
+    document.getElementById('add-btn').textContent = ADD_LABELS[currentPage] || '+ Add';
+    renderPage(currentPage);
+  });
+});
+
+function renderPage(page) {
+  if (page === 'dashboard')        renderDashboard();
+  if (page === 'projects')         renderBoard('projects-board', projects, 'project', boardFilters.projects, '#project-filters-bar');
+  if (page === 'tasks')            renderBoard('tasks-board', tasks, 'task', boardFilters.tasks, '#tasks-filters-bar');
+  if (page === 'communication')    renderBoard('comm-board', notes, 'note', boardFilters.comm, '#comm-filters-bar');
+  if (page === 'client-dojou')     renderBoard('dojou-board', tasks, 'task', 'Dojou Media');
+  if (page === 'client-simplify')  renderBoard('simplify-board', tasks, 'task', 'Simplify Living');
+  if (page === 'sci')              renderBoard('sci-board', [...projects.filter(p => p.client === 'Street Characters'), ...tasks.filter(t => t.client === 'Street Characters')], 'mixed', 'Street Characters');
+  if (page === 'money')            renderMoneyPage();
+  if (page === 'integrations')     initIntegrationsPage();
+}
+
+// ─── KANBAN BOARD RENDERER ─────────────────────────────────────────────────
+function renderBoard(containerId, items, type, filter = 'all', filterBarSel = null) {
+  const filtered = (filter === 'all') ? items : items.filter(i => i.client === filter);
+
+  let html = '';
+  for (const col of COLS) {
+    const colItems = filtered.filter(i => i.status === col.id);
+    html += `
+      <div class="kanban-col"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="onDrop(event,'${col.id}','${type}')">
+        <div class="kanban-col-header">
+          <div class="col-dot" style="background:${col.color}"></div>
+          <span class="col-label">${col.label}</span>
+          <span class="col-count">${colItems.length}</span>
+        </div>
+        <div class="kanban-col-body">
+          ${colItems.length === 0 ? `<div class="empty-col">Drop cards here</div>` : colItems.map(item => renderCard(item, type)).join('')}
+        </div>
+        <div class="kanban-col-footer">
+          <button class="col-add-btn" onclick="openAddModalForCol('${col.id}','${type}','${filter}')">+ Add</button>
+        </div>
+      </div>`;
+  }
+  document.getElementById(containerId).innerHTML = html;
+}
+
+function renderCard(item, type) {
+  // mixed type: auto-detect
+  const isProject = type === 'project' || (type === 'mixed' && item.type !== undefined && !item.priority);
+  const isTask    = type === 'task'    || (type === 'mixed' && item.priority !== undefined);
+  const isNote    = type === 'note';
+
+  if (isProject && !item.priority) return renderProjectCard(item);
+  if (isTask && item.priority)     return renderTaskCard(item);
+  if (isNote)                      return renderNoteCard(item);
+  // fallback
+  if (item.priority !== undefined) return renderTaskCard(item);
+  return renderProjectCard(item);
+}
+
+function renderProjectCard(p) {
+  return `
+  <div class="k-card" draggable="true"
+    ondragstart="onDragStart(event,'${p.id}','project')"
+    ondragend="this.classList.remove('dragging')">
+    <div class="k-card-title">${p.title}</div>
+    <div class="k-card-meta">
+      <span class="client-badge ${clientClass(p.client)}">${p.client}</span>
+      <span class="tag tag-type">${p.type}</span>
+    </div>
+    <div class="k-card-footer">
+      ${deadlineTag(p.deadline)}
+      <div class="k-card-actions">
+        <button class="btn secondary xs" onclick="event.stopPropagation();editProject('${p.id}')">✏️</button>
+        <button class="btn danger xs" onclick="event.stopPropagation();deleteProject('${p.id}')">✕</button>
+      </div>
+    </div>
+    ${p.notes ? `<div style="font-size:11px;color:var(--text-muted);margin-top:7px;line-height:1.4;border-top:1px solid var(--border);padding-top:7px">${p.notes}</div>` : ''}
+  </div>`;
+}
+
+function renderTaskCard(t) {
+  const sourceBadge = t.source === 'clickup'
+    ? `<span class="source-badge">ClickUp</span>`
+    : t.source === 'dojou'
+    ? `<span class="source-badge" style="background:#00c6ff18;color:var(--dojou);border-color:#00c6ff44;">Dojou</span>`
+    : '';
+  const titleLink = t.externalUrl
+    ? `<a href="${t.externalUrl}" target="_blank" style="color:inherit;text-decoration:none;" title="Open in source">${t.title}</a>${sourceBadge}`
+    : `${t.title}${sourceBadge}`;
+  return `
+  <div class="k-card" draggable="true"
+    ondragstart="onDragStart(event,'${t.id}','task')"
+    ondragend="this.classList.remove('dragging')">
+    <div class="k-card-title">${titleLink}</div>
+    <div class="k-card-meta">
+      <span class="client-badge ${clientClass(t.client)}">${t.client}</span>
+      <span class="tag tag-priority-${t.priority}">${t.priority}</span>
+      ${t.project ? `<span class="tag tag-type">📁 ${t.project}</span>` : ''}
+    </div>
+    <div class="k-card-footer">
+      ${deadlineTag(t.due)}
+      <div class="k-card-actions">
+        <button class="btn secondary xs" onclick="event.stopPropagation();editTask('${t.id}')">✏️</button>
+        <button class="btn danger xs" onclick="event.stopPropagation();deleteTask('${t.id}')">✕</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderNoteCard(n) {
+  return `
+  <div class="k-card" draggable="true"
+    ondragstart="onDragStart(event,'${n.id}','note')"
+    ondragend="this.classList.remove('dragging')">
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
+      <div class="client-dot" style="background:${clientColor(n.client)};width:7px;height:7px;border-radius:50%;flex-shrink:0;"></div>
+      <span style="font-size:11px;font-weight:700;color:${clientColor(n.client)}">${n.client}</span>
+      <span class="tag tag-type" style="margin-left:auto">${n.type}</span>
+    </div>
+    <div class="k-card-title" style="font-size:12px;font-weight:400;color:var(--text);line-height:1.5;">${n.text.length > 100 ? n.text.slice(0,100) + '…' : n.text}</div>
+    <div class="k-card-footer" style="margin-top:8px;">
+      <span class="deadline-text deadline-ok">${displayDate(n.date)}${n.project ? ' · ' + n.project : ''}</span>
+      <div class="k-card-actions">
+        <button class="btn danger xs" onclick="event.stopPropagation();deleteNote('${n.id}')">✕</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+
+// ─── DRAG AND DROP ─────────────────────────────────────────────────────────
+function onDragStart(event, id, type) {
+  dragId = id; dragType = type;
+  setTimeout(() => { const el = event.target; if (el) el.classList.add('dragging'); }, 0);
+  event.dataTransfer.effectAllowed = 'move';
+}
+
+function onDrop(event, newStatus, boardType) {
+  event.preventDefault();
+  const col = event.currentTarget;
+  col.classList.remove('drag-over');
+  if (!dragId) return;
+
+  // Resolve actual data type (mixed board shows both projects and tasks)
+  let store, dataKey;
+  const actualType = dragType; // was set at dragstart
+
+  if (actualType === 'project' || (boardType === 'mixed' && !tasks.find(t => t.id === dragId))) {
+    const item = projects.find(p => p.id === dragId);
+    if (item) { item.status = newStatus; DB.save('projects', projects); }
+  } else if (actualType === 'task') {
+    const item = tasks.find(t => t.id === dragId);
+    if (item) { item.status = newStatus; DB.save('tasks', tasks); }
+  } else if (actualType === 'note') {
+    const item = notes.find(n => n.id === dragId);
+    if (item) { item.status = newStatus; DB.save('notes', notes); }
+  }
+
+  dragId = null; dragType = null;
+  renderPage(currentPage);
+  toast('✅ Moved!');
+}
+
+// ─── DASHBOARD ─────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const today   = new Date();
+  const ty      = today.getFullYear(), tm = today.getMonth(), td = today.getDate();
+  const exRate  = getExRate();
+  const paydays = computePaydays(ty, tm);
+
+  // ── Money calculations ──────────────────────────────────────────────────
+  const totalPHP     = paydays.reduce((s, pd) => s + getPaydayPHP(pd, ty, tm), 0);
+  const savingsTotal = bills.filter(b => isSavingsBill(b)).reduce((s, b) => {
+    const amt = getBillAmount(b, ty, tm);
+    if (b.freq === 'biweekly-payday') return s + amt * paydays.filter(pd => pd.client === b.paydayClient).length;
+    return s + amt;
+  }, 0);
+  const loansTotal   = bills.filter(b => b.group === 'loan').reduce((s, b) => s + getBillAmount(b, ty, tm), 0);
+  const fixedTotal   = bills.filter(b => b.group !== 'loan' && !isSavingsBill(b) && !isOlieSavings(b)).reduce((s, b) => s + getBillAmount(b, ty, tm), 0);
+  const olieTotal    = bills.filter(b => isOlieSavings(b)).reduce((s, b) => s + getBillAmount(b, ty, tm), 0);
+  const totalOut     = fixedTotal + loansTotal + savingsTotal + olieTotal;
+  const netBalance   = Math.round(totalPHP - totalOut);
+  const SAVINGS_GOAL = 100000;
+  const savingsPct   = Math.min(100, Math.round(savingsTotal / SAVINGS_GOAL * 100));
+  const incomeReceivedPHP = paydays.reduce((s, pd) => isPaydayReceived(pd.id, ty, tm) ? s + getPaydayPHP(pd, ty, tm) : s, 0);
+  const incomePct    = totalPHP > 0 ? Math.min(100, Math.round(incomeReceivedPHP / totalPHP * 100)) : 0;
+  const billsPaidTotal = bills.filter(b => b.group !== 'loan' && !isSavingsBill(b) && !isOlieSavings(b) && getBillStatus(b, ty, tm) === 'paid').reduce((s, b) => s + getBillAmount(b, ty, tm), 0);
+  const billsPct     = fixedTotal > 0 ? Math.min(100, Math.round(billsPaidTotal / fixedTotal * 100)) : 0;
+
+  function pbar(pct, color) {
+    return `<div style="margin-top:5px;background:#1e1e1e;border-radius:3px;height:5px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .4s;"></div></div>`;
+  }
+
+  // ── Balance banner ──────────────────────────────────────────────────────
+  const monthName = today.toLocaleString('default', { month: 'long', year: 'numeric' });
+  document.getElementById('dash-balance').innerHTML = netBalance < 0
+    ? `<div style="background:#ef444418;border:1px solid #ef444455;border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:20px;">⚠️</span>
+        <div><div style="font-weight:700;color:#ef4444;">Projected negative for ${monthName}</div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px;">Income ₱${Math.round(totalPHP).toLocaleString()} − Outgoing ₱${totalOut.toLocaleString()} = <strong style="color:#ef4444;">−₱${Math.abs(netBalance).toLocaleString()}</strong> shortfall</div></div>
+      </div>`
+    : `<div style="background:#22c55e12;border:1px solid #22c55e33;border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:20px;">✅</span>
+        <div><div style="font-weight:700;color:#22c55e;">You're in the green for ${monthName}</div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px;">Income ₱${Math.round(totalPHP).toLocaleString()} − Outgoing ₱${totalOut.toLocaleString()} = <strong style="color:#22c55e;">+₱${netBalance.toLocaleString()}</strong> surplus</div></div>
+      </div>`;
+
+  // ── Top stats ───────────────────────────────────────────────────────────
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="money-card" style="border-color:#22c55e44;">
+      <div class="m-label" style="color:#22c55e;">Monthly Income</div>
+      <div class="m-value text-green">₱${Math.round(totalPHP).toLocaleString()}</div>
+      <div class="m-sub">$${paydays.reduce((s,p)=>s+p.usd,0).toFixed(0)} USD @ ₱${exRate}/$</div>
+      ${pbar(incomePct,'#22c55e')}
+      <div style="font-size:10px;color:#22c55e;margin-top:3px;">₱${Math.round(incomeReceivedPHP).toLocaleString()} received</div>
+    </div>
+    <div class="money-card" style="border-color:#f59e0b44;">
+      <div class="m-label" style="color:#f59e0b;">Bills &amp; Expenses</div>
+      <div class="m-value text-yellow">₱${Math.round(fixedTotal).toLocaleString()}</div>
+      <div class="m-sub">utilities, food, subs</div>
+      ${pbar(billsPct,'#f59e0b')}
+      <div style="font-size:10px;color:#f59e0b;margin-top:3px;">₱${Math.round(billsPaidTotal).toLocaleString()} paid</div>
+    </div>
+    <div class="money-card" style="border-color:#ef444444;">
+      <div class="m-label" style="color:#ef4444;">Loans &amp; Installments</div>
+      <div class="m-value" style="color:#ef4444;">₱${Math.round(loansTotal).toLocaleString()}</div>
+      <div class="m-sub">loans, CC, devices</div>
+    </div>
+    <div class="money-card" style="border-color:#22c55e44;">
+      <div class="m-label" style="color:#22c55e;">Family Savings</div>
+      <div class="m-value" style="color:#22c55e;">₱${Math.round(savingsTotal).toLocaleString()}</div>
+      <div class="m-sub">Goal: ₱${SAVINGS_GOAL.toLocaleString()}</div>
+      ${pbar(savingsPct,'#22c55e')}
+      <div style="font-size:10px;color:#22c55e;margin-top:3px;">${savingsPct}% of goal</div>
+    </div>`;
+
+  // ── Client task cards ───────────────────────────────────────────────────
+  const clients = [
+    { name: 'Dojou Media',       emoji: '🎬', color: 'var(--dojou)',    border: '#00c6ff' },
+    { name: 'Simplify Living',   emoji: '🌿', color: 'var(--simplify)', border: '#43e97b' },
+    { name: 'Street Characters', emoji: '🎭', color: 'var(--sci)',       border: '#f7971e' },
+  ];
+  const statusOrder  = ['pending','in-progress','pending-qc','holding','revision','delivered','done'];
+  const statusLabel  = { 'pending':'Pending','in-progress':'In Progress','pending-qc':'QC','holding':'Holding','revision':'Revision','delivered':'Delivered','done':'Done' };
+  const statusColors = { 'pending':'#6b7280','in-progress':'#3b82f6','pending-qc':'#f59e0b','holding':'#8b5cf6','revision':'#ef4444','delivered':'#06b6d4','done':'#22c55e' };
+
+  document.getElementById('dash-clients').innerHTML = clients.map(cl => {
+    const clTasks  = tasks.filter(t => t.client === cl.name);
+    const active   = clTasks.filter(t => t.status !== 'done');
+    const doneCount= clTasks.filter(t => t.status === 'done').length;
+
+    // Status count pills
+    const statusPills = statusOrder.map(s => {
+      const n = clTasks.filter(t => t.status === s).length;
+      if (n === 0) return '';
+      return `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${statusColors[s]}22;color:${statusColors[s]};border:1px solid ${statusColors[s]}44;">${statusLabel[s]} ${n}</span>`;
+    }).join('');
+
+    // Top active tasks (max 4)
+    const taskRows = active.slice(0, 4).map(t => {
+      const sc = statusColors[t.status] || '#6b7280';
+      const urgentFlag = t.deadline && daysUntil(t.deadline) <= 3 ? ' <span style="color:#ef4444;font-size:10px;">⚠ due soon</span>' : '';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+        <div style="width:8px;height:8px;border-radius:50%;background:${sc};flex-shrink:0;"></div>
+        <div style="flex:1;font-size:12px;color:var(--text);line-height:1.3;">${t.title}${urgentFlag}</div>
+        <span style="font-size:10px;color:${sc};white-space:nowrap;">${statusLabel[t.status]||t.status}</span>
+      </div>`;
+    }).join('');
+
+    const moreCount = active.length > 4 ? `<div style="font-size:11px;color:var(--text-muted);padding-top:6px;">+${active.length - 4} more tasks</div>` : '';
+
+    return `<div class="card" style="border-color:${cl.border}33;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:18px;">${cl.emoji}</span>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:700;color:${cl.color};">${cl.name}</div>
+          <div style="font-size:11px;color:var(--text-muted);">${active.length} active · ${doneCount} done</div>
+        </div>
+        <button class="btn secondary small" onclick="navigateTo('${cl.name==='Dojou Media'?'client-dojou':cl.name==='Simplify Living'?'client-simplify':'sci'}')" style="font-size:11px;padding:4px 10px;">View →</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">${statusPills || '<span style="font-size:11px;color:var(--text-muted);">No tasks yet</span>'}</div>
+      ${clTasks.length > 0 ? taskRows + moreCount : '<div style="font-size:12px;color:var(--text-muted);padding:4px 0;">No tasks synced yet — use Sync button</div>'}
+    </div>`;
+  }).join('');
+
+  // ── Money summary card ──────────────────────────────────────────────────
+  // Next payday
+  function getNextPaydayInfo() {
+    const allPds = [...computePaydays(ty, tm), ...computePaydays(tm===11?ty+1:ty, tm===11?0:tm+1)];
+    const future = allPds.filter(pd => {
+      const pdDate = new Date(pd.day <= 28 || tm < 11 ? ty : ty + 1, pd.day <= td ? (tm===11?0:tm+1) : tm, pd.day);
+      return pdDate >= today || (pd.day >= td && /* same month */ true);
+    });
+    // Simpler: find first payday this month >= today, else first of next month
+    const thisMonthFuture = computePaydays(ty, tm).filter(pd => pd.day >= td).sort((a,b)=>a.day-b.day);
+    if (thisMonthFuture.length > 0) {
+      const pd = thisMonthFuture[0];
+      const days = pd.day - td;
+      const php  = getPaydayPHP(pd, ty, tm);
+      return { label: pd.label, days, php, day: pd.day };
+    }
+    const nextM = tm===11?0:tm+1, nextY = tm===11?ty+1:ty;
+    const nextMonthPds = computePaydays(nextY, nextM).sort((a,b)=>a.day-b.day);
+    if (nextMonthPds.length > 0) {
+      const pd = nextMonthPds[0];
+      const daysLeft = new Date(ty,tm+1,0).getDate() - td + pd.day;
+      const php  = getPaydayPHP(pd, nextY, nextM);
+      return { label: pd.label, days: daysLeft, php, day: pd.day };
+    }
+    return null;
+  }
+  const nextPay = getNextPaydayInfo();
+  const nextPayHTML = nextPay
+    ? `<div style="background:#06b6d418;border:1px solid #06b6d433;border-radius:8px;padding:10px 14px;margin-bottom:10px;">
+        <div style="font-size:10px;color:#06b6d4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">💸 Next Payday</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);">${nextPay.label}</div>
+        <div style="font-size:12px;color:var(--text-muted);">${nextPay.days === 0 ? '🎉 Today!' : nextPay.days === 1 ? 'Tomorrow' : `In ${nextPay.days} days`} · ₱${Math.round(nextPay.php).toLocaleString()}</div>
+      </div>`
+    : '';
+
+  const unpaidBills = bills.filter(b => !isSavingsBill(b) && !isOlieSavings(b) && getBillStatus(b, ty, tm) !== 'paid').length;
+  const unpaidLoans = bills.filter(b => b.group === 'loan' && getBillStatus(b, ty, tm) !== 'paid').length;
+
+  document.getElementById('dash-money').innerHTML = `
+    <div class="card-title" style="margin-bottom:12px;">💰 Money This Month</div>
+    ${nextPayHTML}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+        <span style="color:var(--text-muted);">Income (expected)</span>
+        <span style="font-weight:700;color:#22c55e;">₱${Math.round(totalPHP).toLocaleString()}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+        <span style="color:var(--text-muted);">Bills &amp; Expenses</span>
+        <span style="font-weight:700;color:#f59e0b;">−₱${Math.round(fixedTotal).toLocaleString()} <span style="font-size:10px;font-weight:400;">(${unpaidBills} unpaid)</span></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+        <span style="color:var(--text-muted);">Loans &amp; CC</span>
+        <span style="font-weight:700;color:#ef4444;">−₱${Math.round(loansTotal).toLocaleString()} <span style="font-size:10px;font-weight:400;">(${unpaidLoans} unpaid)</span></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+        <span style="color:var(--text-muted);">Family Savings</span>
+        <span style="font-weight:700;color:#22c55e;">−₱${Math.round(savingsTotal).toLocaleString()}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+        <span style="color:var(--text-muted);">Olie (separate)</span>
+        <span style="font-weight:700;color:#ec4899;">−₱${Math.round(olieTotal).toLocaleString()}</span>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between;align-items:center;font-size:14px;">
+        <span style="font-weight:700;">Net Balance</span>
+        <span style="font-weight:800;color:${netBalance>=0?'#22c55e':'#ef4444'};">${netBalance>=0?'+':''}₱${netBalance.toLocaleString()}</span>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);text-align:center;">
+      <button class="btn secondary small" onclick="navigateTo('money')" style="font-size:11px;">Open Money &amp; Bills →</button>
+    </div>`;
+
+  // ── Upcoming bills & paydays (next 7 days) ──────────────────────────────
+  const upcoming = [];
+  // Bills
+  bills.forEach(b => {
+    if (isSavingsBill(b) || isOlieSavings(b)) return; // skip savings in upcoming
+    if (b.freq === 'biweekly-payday') {
+      computePaydays(ty, tm).filter(pd => pd.client === b.paydayClient && pd.day >= td && pd.day <= td + 7).forEach(pd => {
+        upcoming.push({ day: pd.day, label: b.name, amount: getBillAmount(b, ty, tm), type: 'bill', color: billColor(b) });
+      });
+      return;
+    }
+    const d = effectiveDueDay(b, ty, tm);
+    if (d && d >= td && d <= td + 7 && getBillStatus(b, ty, tm) !== 'paid') {
+      upcoming.push({ day: d, label: b.name, amount: getBillAmount(b, ty, tm), type: 'bill', color: billColor(b) });
+    }
+  });
+  // Paydays
+  computePaydays(ty, tm).filter(pd => pd.day >= td && pd.day <= td + 7).forEach(pd => {
+    upcoming.push({ day: pd.day, label: pd.label, amount: getPaydayPHP(pd, ty, tm), type: 'payday', color: '#06b6d4' });
+  });
+  upcoming.sort((a, b) => a.day - b.day);
+
+  const upcomingRows = upcoming.length === 0
+    ? `<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">Nothing due in the next 7 days 🎉</div>`
+    : upcoming.map(u => {
+        const daysAway = u.day - td;
+        const dayLabel = daysAway === 0 ? 'Today' : daysAway === 1 ? 'Tomorrow' : `Jun ${u.day}`;
+        const arrow = u.type === 'payday' ? '↑' : '↓';
+        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-muted);width:54px;flex-shrink:0;">${dayLabel}</div>
+          <div style="width:16px;text-align:center;font-size:13px;font-weight:700;color:${u.color};">${arrow}</div>
+          <div style="flex:1;font-size:12px;color:var(--text);">${u.label}</div>
+          <div style="font-size:12px;font-weight:700;color:${u.color};">₱${Math.round(u.amount).toLocaleString()}</div>
+        </div>`;
+      }).join('');
+
+  document.getElementById('dash-upcoming').innerHTML = `
+    <div class="card-title" style="margin-bottom:10px;">📅 Next 7 Days</div>
+    ${upcomingRows}`;
+}
+
+// ─── FILTER BUTTONS (projects/tasks) ──────────────────────────────────────
+document.querySelectorAll('.kanban-page-header .filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    this.closest('.kanban-page-header').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    const filter = this.dataset.filter;
+    if (currentPage === 'projects')      { boardFilters.projects = filter; renderBoard('projects-board', projects, 'project', filter); }
+    if (currentPage === 'tasks')         { boardFilters.tasks = filter;    renderBoard('tasks-board', tasks, 'task', filter); }
+    if (currentPage === 'communication') { boardFilters.comm = filter;     renderBoard('comm-board', notes, 'note', filter); }
+  });
+});
+
+// ─── MODAL DISPATCH ────────────────────────────────────────────────────────
+function openAddModal() {
+  const p = currentPage;
+  if (p === 'projects' || p === 'client-dojou' || p === 'client-simplify') openProjectModal(null, null, p);
+  else if (p === 'tasks' || p === 'sci') openTaskModal(null, null, p);
+  else if (p === 'communication') openNoteModal(null, null);
+  else if (p === 'money') openBillModal(null);
+  else openProjectModal(null, null, p);
+}
+
+function openAddModalForCol(colId, type, filter) {
+  if (type === 'project' || (type === 'mixed' && filter !== 'Street Characters')) openProjectModal(null, colId, currentPage, filter);
+  else if (type === 'task' || type === 'mixed') openTaskModal(null, colId, currentPage, filter);
+  else if (type === 'note') openNoteModal(null, colId);
+}
+
+// ─── PROJECT CRUD ──────────────────────────────────────────────────────────
+function openProjectModal(id, defaultStatus, page, filterClient) {
+  editingId = id || null; editingType = 'project';
+  const p = id ? projects.find(x => x.id === id) : null;
+  document.getElementById('project-modal-title').textContent = p ? 'Edit Project' : 'New Project';
+  document.getElementById('p-title').value    = p?.title    || '';
+  document.getElementById('p-client').value   = p?.client   || (filterClient && filterClient !== 'all' ? filterClient : page === 'client-simplify' ? 'Simplify Living' : page === 'sci' ? 'Street Characters' : 'Dojou Media');
+  document.getElementById('p-status').value   = p?.status   || defaultStatus || 'pending';
+  document.getElementById('p-type').value     = p?.type     || 'Video Edit';
+  document.getElementById('p-deadline').value = p?.deadline || '';
+  document.getElementById('p-notes').value    = p?.notes    || '';
+  openModal('project-modal');
+}
+function saveProject() {
+  const title = document.getElementById('p-title').value.trim();
+  if (!title) { toast('⚠ Enter a project name'); return; }
+  const data = { title, client: document.getElementById('p-client').value, status: document.getElementById('p-status').value, type: document.getElementById('p-type').value, deadline: document.getElementById('p-deadline').value, notes: document.getElementById('p-notes').value };
+  if (editingId) Object.assign(projects.find(p => p.id === editingId), data);
+  else projects.push({ id: uid(), created: Date.now(), ...data });
+  DB.save('projects', projects);
+  closeModal('project-modal');
+  toast(editingId ? '✅ Project updated' : '✅ Project added');
+  renderPage(currentPage);
+}
+function editProject(id) { openProjectModal(id, null, currentPage); }
+function deleteProject(id) { if (!confirm('Delete this project?')) return; projects = projects.filter(p => p.id !== id); DB.save('projects', projects); renderPage(currentPage); toast('🗑 Deleted'); }
+
+// ─── TASK CRUD ─────────────────────────────────────────────────────────────
+function openTaskModal(id, defaultStatus, page, filterClient) {
+  editingId = id || null; editingType = 'task';
+  const t = id ? tasks.find(x => x.id === id) : null;
+  document.getElementById('task-modal-title').textContent = t ? 'Edit Task' : 'New Task';
+  document.getElementById('t-title').value   = t?.title   || '';
+  document.getElementById('t-client').value  = t?.client  || (filterClient && filterClient !== 'all' ? filterClient : page === 'sci' ? 'Street Characters' : 'Dojou Media');
+  document.getElementById('t-status').value  = t?.status  || defaultStatus || 'pending';
+  document.getElementById('t-priority').value= t?.priority|| 'medium';
+  document.getElementById('t-due').value     = t?.due     || '';
+  document.getElementById('t-project').value = t?.project || '';
+  document.getElementById('t-notes').value   = t?.notes   || '';
+  openModal('task-modal');
+}
+function saveTask() {
+  const title = document.getElementById('t-title').value.trim();
+  if (!title) { toast('⚠ Enter a task'); return; }
+  const data = { title, client: document.getElementById('t-client').value, status: document.getElementById('t-status').value, priority: document.getElementById('t-priority').value, due: document.getElementById('t-due').value, project: document.getElementById('t-project').value, notes: document.getElementById('t-notes').value };
+  if (editingId) Object.assign(tasks.find(t => t.id === editingId), data);
+  else tasks.push({ id: uid(), created: Date.now(), ...data });
+  DB.save('tasks', tasks);
+  closeModal('task-modal');
+  toast(editingId ? '✅ Task updated' : '✅ Task added');
+  renderPage(currentPage);
+}
+function editTask(id) { openTaskModal(id, null, currentPage); }
+function deleteTask(id) { if (!confirm('Delete this task?')) return; tasks = tasks.filter(t => t.id !== id); DB.save('tasks', tasks); renderPage(currentPage); toast('🗑 Deleted'); }
+
+// ─── NOTE CRUD ─────────────────────────────────────────────────────────────
+function openNoteModal(id, defaultStatus) {
+  editingId = null;
+  document.getElementById('n-client').value = 'Dojou Media';
+  document.getElementById('n-status').value = defaultStatus || 'pending';
+  document.getElementById('n-type').value   = 'Message';
+  document.getElementById('n-date').value   = today();
+  document.getElementById('n-project').value= '';
+  document.getElementById('n-text').value   = '';
+  openModal('note-modal');
+}
+function saveNote() {
+  const text = document.getElementById('n-text').value.trim();
+  if (!text) { toast('⚠ Enter a note'); return; }
+  notes.push({ id: uid(), created: Date.now(), client: document.getElementById('n-client').value, status: document.getElementById('n-status').value, type: document.getElementById('n-type').value, date: document.getElementById('n-date').value, project: document.getElementById('n-project').value, text });
+  DB.save('notes', notes);
+  closeModal('note-modal');
+  toast('✅ Log saved');
+  renderPage(currentPage);
+}
+function deleteNote(id) { if (!confirm('Delete this log?')) return; notes = notes.filter(n => n.id !== id); DB.save('notes', notes); renderPage(currentPage); toast('🗑 Deleted'); }
+
+// ─── MODAL HELPERS ─────────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
+
+// ─── EXPORT ────────────────────────────────────────────────────────────────
+function exportData() {
+  const blob = new Blob([JSON.stringify({ projects, tasks, notes, exported: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `patrick-crm-backup-${today()}.json`; a.click();
+  toast('✅ Exported!');
+}
+
+// ─── MONEY & BILLS DATA ────────────────────────────────────────────────────
+let bills = DB.load('bills');
+let goals = DB.load('goals');
+let editingBillId = null;
+let editingGoalId = null;
+
+function getExRate() {
+  return parseFloat(localStorage.getItem('pcrm4_exrate') || '56');
+}
+function saveExRate() {
+  const v = parseFloat(document.getElementById('exrate-input').value) || 56;
+  localStorage.setItem('pcrm4_exrate', v);
+}
+// Fetch live USD→PHP rate — tries multiple free CORS-open APIs in order
+async function fetchLiveRate() {
+  const btn = document.getElementById('rate-refresh-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Fetching…'; }
+
+  async function tryFetch(url, parser) {
+    const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    const rate = parser(data);
+    if (!rate || isNaN(rate)) throw new Error('Bad rate value');
+    return parseFloat(rate);
+  }
+
+  const APIS = [
+    // 1. ExchangeRate.host (free, CORS-open)
+    ['https://api.exchangerate.host/latest?base=USD&symbols=PHP',
+      d => d.rates?.PHP],
+    // 2. Open Exchange Rates (free public endpoint for a few currencies)
+    ['https://open.er-api.com/v6/latest/USD',
+      d => d.rates?.PHP],
+    // 3. Frankfurter (ECB-based, may be slow or down)
+    ['https://api.frankfurter.app/latest?from=USD&to=PHP',
+      d => d.rates?.PHP],
+  ];
+
+  let rate = null, errMsg = '';
+  for (const [url, parser] of APIS) {
+    try { rate = await tryFetch(url, parser); break; }
+    catch (e) { errMsg = e.message; }
+  }
+
+  const note = document.getElementById('exrate-note');
+  const inp  = document.getElementById('exrate-input');
+  if (rate) {
+    localStorage.setItem('pcrm4_exrate', rate.toFixed(4));
+    localStorage.setItem('pcrm4_exrate_fetched', new Date().toISOString());
+    if (inp)  inp.value = rate.toFixed(4);
+    if (note) note.textContent = `Updated just now (${rate.toFixed(4)})`;
+    renderMoneyPage();
+    if (document.getElementById('page-dashboard')?.classList.contains('active')) renderDashboard();
+  } else {
+    if (note) note.textContent = `⚠ Couldn't fetch — update manually`;
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '🔄 Live Rate'; }
+}
+// Auto-fetch if rate is older than 4 hours
+function autoFetchRateIfStale() {
+  const last = localStorage.getItem('pcrm4_exrate_fetched');
+  if (!last || (Date.now() - new Date(last).getTime()) > 4 * 60 * 60 * 1000) {
+    fetchLiveRate();
+  }
+}
+
+function seedMoneyData() {
+  if (bills.length === 0) {
+    const n = Date.now();
+    bills = [
+      // ── After Blake payday (1st week of month) ──────────────────────────
+      { id: uid(), name: 'Gas',                      cat: '🚗 Transport',    amount: 2000,  dueDay: 1,  group: 'after-blake', freq: 'monthly', status: 'unpaid', note: 'Right after Blake payday',           created: n },
+      { id: uid(), name: 'Housing',                  cat: '🏠 Housing',      amount: 7000,  dueDay: 1,  group: 'after-blake', freq: 'monthly', status: 'unpaid', note: 'Right after Blake payday',           created: n },
+      { id: uid(), name: 'Olie Savings',             cat: '🌸 Olie',         amount: 2000,  dueDay: 1,  group: 'olie-savings', freq: 'monthly', status: 'unpaid', note: "Olie's personal savings — separate from Family Savings", created: n },
+      { id: uid(), name: "Olie's Insurance/Savings", cat: '🌸 Olie',         amount: 8000,  dueDay: 1,  group: 'olie-savings', freq: 'monthly', status: 'unpaid', note: "Olie's insurance — separate from Family Savings",        created: n },
+      { id: uid(), name: 'Family Savings · Simplify',cat: '💰 Savings',      amount: 10000, dueDay: null, group: 'savings', freq: 'biweekly-payday', paydayClient: 'Simplify Living',  status: 'unpaid', note: '₱10k per Blake/Simplify payday — 2×/month = ₱20k', created: n },
+      { id: uid(), name: 'Family Savings · SCI',     cat: '💰 Savings',      amount: 20000, dueDay: null, group: 'savings', freq: 'biweekly-payday', paydayClient: 'Street Characters', status: 'unpaid', note: '₱20k per Glenn/SCI payday — 2×/month = ₱40k',     created: n },
+
+      // ── 3rd of month ─────────────────────────────────────────────────────
+      { id: uid(), name: 'Converge',                 cat: '🌐 Internet',     amount: 1699,  dueDay: 3,  group: 'utility',     freq: 'monthly', status: 'unpaid', note: 'Billing date: 3rd every month',     created: n },
+
+      // ── After Glenn payday (~8th) ─────────────────────────────────────────
+      { id: uid(), name: 'Grocery',                  cat: '🍔 Food',         amount: 9000,  dueDay: 15, group: 'food',    freq: 'monthly', status: 'unpaid', note: 'Grocery run — 15th',                 created: n },
+      { id: uid(), name: 'Grocery',                  cat: '🍔 Food',         amount: 9000,  dueDay: 30, group: 'food',    freq: 'monthly', status: 'unpaid', note: 'Grocery run — 30th',                 created: n },
+      { id: uid(), name: 'Family Savings · Dojou',   cat: '💰 Savings',      amount: 40000, dueDay: null, group: 'savings', freq: 'last-friday', status: 'unpaid', note: 'Monthly family savings from Dojou income — last Friday', created: n },
+      { id: uid(), name: 'Macbook Installment',      cat: '💻 Device',       amount: 6416,  dueDay: 13, group: 'loan',        freq: 'monthly', status: 'unpaid', note: 'Same date as Daddy CC',             created: n },
+      { id: uid(), name: 'iPhone Installment',       cat: '📱 Phone',        amount: 3068,  dueDay: 13, group: 'loan',        freq: 'monthly', status: 'unpaid', note: 'Same date as Daddy CC',             created: n },
+      { id: uid(), name: 'Motor Loan',               cat: '🚗 Transport',    amount: 8726,  dueDay: 10, group: 'loan',        freq: 'monthly', status: 'unpaid', note: 'Due: 10th every month',             created: n },
+
+      // ── 11th ──────────────────────────────────────────────────────────────
+      { id: uid(), name: 'Batelec',                  cat: '💡 Utilities',    amount: 4200,  dueDay: 11, group: 'utility',     freq: 'monthly', status: 'unpaid', note: 'Due: 11th — click to enter actual amount', variable: true, created: n },
+
+      // ── 12th (Loans) ──────────────────────────────────────────────────────
+      { id: uid(), name: 'Daddy Personal Loan',      cat: '🏦 Loan',         amount: 10484, dueDay: 12, group: 'loan',        freq: 'monthly', status: 'unpaid', note: 'Acct #906040251 — installment X/36',created: n },
+      { id: uid(), name: 'Mommy Personal Loan',      cat: '🏦 Loan',         amount: 5242,  dueDay: 12, group: 'loan',        freq: 'monthly', status: 'unpaid', note: 'Acct #909128374 — installment X/36',created: n },
+
+      // ── 13th (Credit Cards) ───────────────────────────────────────────────
+      { id: uid(), name: 'Daddy CC',                 cat: '💳 Credit Card',  amount: 6047,  dueDay: 13, group: 'loan',        freq: 'monthly', status: 'unpaid', note: 'Card #5488...4905 — X/60',          created: n },
+      { id: uid(), name: 'Mommy CC',                 cat: '💳 Credit Card',  amount: 3836,  dueDay: 13, group: 'loan',        freq: 'monthly', status: 'unpaid', note: 'Card #5455...0168 — X/60',          created: n },
+
+      // ── 16th ──────────────────────────────────────────────────────────────
+      { id: uid(), name: 'Claude Pro',               cat: '🤖 Subscriptions',amount: 1254,  dueDay: 16, group: 'sub',         freq: 'monthly', status: 'paid',   note: '$22.40 USD — billed to credit card',created: n },
+
+      // ── 17th ──────────────────────────────────────────────────────────────
+      { id: uid(), name: 'Bawad (Water)',             cat: '💧 Utilities',    amount: 600,   dueDay: 17, group: 'utility',     freq: 'monthly', status: 'unpaid', note: 'Due: 17th — click to enter actual amount', variable: true, created: n },
+
+      // ── ~25th (Subscriptions) ─────────────────────────────────────────────
+      { id: uid(), name: 'iCloud',                   cat: '☁️ Subscriptions',amount: 599,   dueDay: 27, group: 'sub',         freq: 'monthly', status: 'unpaid', note: '',                                  created: n },
+      { id: uid(), name: 'CapCut',                   cat: '🎬 Subscriptions',amount: 359,   dueDay: 29, group: 'sub',         freq: 'monthly', status: 'unpaid', note: '',                                  created: n },
+      { id: uid(), name: 'Canva',                    cat: '🎨 Subscriptions',amount: 299,   dueDay: 23, group: 'sub',         freq: 'monthly', status: 'unpaid', note: '',                                  created: n },
+      { id: uid(), name: 'Eleven Labs',              cat: '🤖 Subscriptions',amount: 2800,  dueDay: 30, dueMonth: 0, group: 'sub', freq: 'yearly', status: 'unpaid', note: '$50 USD/year — renews January 30',  created: n },
+      { id: uid(), name: 'Disney+',                  cat: '🎬 Subscriptions',amount: 599,   dueDay: 30, group: 'sub',         freq: 'monthly', status: 'unpaid', note: 'End of month',                      created: n },
+
+      // ── Last Friday of every month ────────────────────────────────────────
+      { id: uid(), name: 'Emily (Maid Salary)',       cat: '👨‍👩‍👧 Family',      amount: 7000,  dueDay: null, group: 'after-blake', freq: 'last-friday',  status: 'unpaid', note: 'Every last Friday of the month',            created: n },
+    ];
+    DB.save('bills', bills);
+  }
+  if (goals.length === 0) {
+    goals = [
+      { id: uid(), name: 'Emergency Fund',   icon: '🚨', target: 100000, saved: 0,    date: '2026-12-31', created: Date.now() },
+      { id: uid(), name: 'Stanley Fund',     icon: '📦', target: 71456,  saved: 0,    date: '2026-12-31', created: Date.now() },
+    ];
+    DB.save('goals', goals);
+  }
+}
+
+// ─── PAYDAY EVENTS (Income on Calendar) ────────────────────────────────────
+// Dynamically computed per month based on actual pay schedules:
+//   Dojou      → last Friday of month only
+//   Simplify   → every Friday (invoices Thursday, receives Friday, weekly)
+//   SCI        → every Friday starting June 27 2026 (first payment after first invoice)
+const SIMPLIFY_START = new Date(2026, 5, 19); // June 19, 2026 — first payday for both Simplify & SCI (biweekly, same schedule)
+
+function computePaydays(y, m) {
+  const result = [];
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+  // All Fridays in this month
+  const fridays = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    if (new Date(y, m, d).getDay() === 5) fridays.push(d);
+  }
+  if (!fridays.length) return result;
+
+  const lastFriday = fridays[fridays.length - 1];
+
+  const CYAN = '#06b6d4'; // cyan for all income
+
+  // Dojou: last Friday only, monthly lump sum ($1,000/mo)
+  result.push({
+    id:     `dojou-d${lastFriday}`,
+    label:  'Dojou Media',
+    client: 'Dojou Media',
+    color:  CYAN,
+    usd:    1000,
+    day:    lastFriday,
+  });
+
+  // Simplify Living (Blake pays): biweekly every 2 weeks starting June 19, 2026
+  fridays.forEach(fd => {
+    const daysDiff = Math.round((new Date(y, m, fd) - SIMPLIFY_START) / 86400000);
+    if (daysDiff >= 0 && daysDiff % 14 === 0) {
+      result.push({
+        id:     `simplify-d${fd}`,
+        label:  'Blake · Simplify',
+        client: 'Simplify Living',
+        color:  CYAN,
+        usd:    400,
+        day:    fd,
+      });
+    }
+  });
+
+  // Street Characters (Glenn pays): same biweekly schedule as Simplify, starting June 19, 2026
+  fridays.forEach(fd => {
+    const daysDiff = Math.round((new Date(y, m, fd) - SIMPLIFY_START) / 86400000);
+    if (daysDiff >= 0 && daysDiff % 14 === 0) {
+      result.push({
+        id:     `sci-d${fd}`,
+        label:  'Glenn · SCI',
+        client: 'Street Characters',
+        color:  CYAN,
+        usd:    502.40,
+        day:    fd,
+      });
+    }
+  });
+
+  return result;
+}
+
+// Always use current calendar month's paydays
+function getPaydays() { return computePaydays(calYear, calMonth); }
+
+// Per-month per-payday actual PHP received (Wise amount after fees & rate variance)
+function getPayIncomeKey(y, m) { return `pcrm4_payincome_${y}_${m}`; }
+function getPayIncomes(y, m)   { try { return JSON.parse(localStorage.getItem(getPayIncomeKey(y,m)) || '{}'); } catch { return {}; } }
+function savePayIncome(y, m, id, php) {
+  const o = getPayIncomes(y, m);
+  if (php === '' || php === null || php === undefined) delete o[id];
+  else o[id] = Number(php);
+  localStorage.setItem(getPayIncomeKey(y, m), JSON.stringify(o));
+}
+// Returns actual PHP for a payday (from override) or estimate (usd × rate)
+function getPaydayPHP(pd, y, m) {
+  const actuals = getPayIncomes(y, m);
+  return actuals[pd.id] !== undefined ? actuals[pd.id] : pd.usd * getExRate();
+}
+// Whether a payday has been marked received
+function isPaydayReceived(pdId, y, m) {
+  return getPayIncomes(y, m)[pdId] !== undefined;
+}
+// Total monthly income from payday actuals/estimates grouped by client
+function calcMonthlyIncome() {
+  const grouped = {};
+  getPaydays().forEach(pd => {
+    if (!grouped[pd.client]) grouped[pd.client] = { client: pd.client, color: pd.color, usd: 0, php: 0, paydays: [] };
+    grouped[pd.client].usd += pd.usd;
+    grouped[pd.client].php += getPaydayPHP(pd, calYear, calMonth);
+    grouped[pd.client].paydays.push(pd);
+  });
+  return Object.values(grouped);
+}
+
+// ─── CALENDAR STATE ────────────────────────────────────────────────────────
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0-indexed
+let calSelectedDay = null;
+
+// Monthly overrides: amounts & statuses per bill per month
+// stored as pcrm4_moverride_YYYY_MM = { billId: { amount, status } }
+function mKey(y, m) { return `pcrm4_moverride_${y}_${m}`; }
+function getMonthOverrides(y, m) { try { return JSON.parse(localStorage.getItem(mKey(y,m)) || '{}'); } catch { return {}; } }
+function saveMonthOverride(y, m, billId, field, value) {
+  const o = getMonthOverrides(y, m);
+  if (!o[billId]) o[billId] = {};
+  o[billId][field] = value;
+  localStorage.setItem(mKey(y, m), JSON.stringify(o));
+}
+function getBillOverride(billId, field, y, m) {
+  const o = getMonthOverrides(y, m);
+  return o[billId]?.[field];
+}
+function getBillAmount(b, y, m) {
+  const ov = getBillOverride(b.id, 'amount', y, m);
+  return ov !== undefined ? Number(ov) : Number(b.amount);
+}
+function getBillStatus(b, y, m) {
+  const ov = getBillOverride(b.id, 'status', y, m);
+  return ov !== undefined ? ov : b.status;
+}
+
+// Returns the day-of-month number for the last Friday of a given year/month
+function getLastFriday(y, m) {
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  for (let d = daysInMonth; d >= 1; d--) {
+    if (new Date(y, m, d).getDay() === 5) return d; // 5 = Friday
+  }
+  return daysInMonth;
+}
+
+// Returns the effective dueDay for a bill in a given month
+// Handles special freq values like 'last-friday'
+function effectiveDueDay(b, y, m) {
+  if (b.freq === 'last-friday') return getLastFriday(y, m);
+  if (b.freq === 'yearly') {
+    // Only show in the month it renews (dueMonth = 0-indexed)
+    if (b.dueMonth !== undefined && b.dueMonth !== m) return null;
+    return b.dueDay;
+  }
+  return b.dueDay;
+}
+
+function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } calSelectedDay = null; renderMoneyPage(); }
+function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } calSelectedDay = null; renderMoneyPage(); }
+function closeDayPanel() { calSelectedDay = null; document.getElementById('day-panel').style.display = 'none'; }
+
+function openDayPanel(day) {
+  calSelectedDay = day;
+  renderCalendar();
+  const panel     = document.getElementById('day-panel');
+  const title     = document.getElementById('day-panel-title-text');
+  const body      = document.getElementById('day-panel-body');
+  const monthName = new Date(calYear, calMonth, 1).toLocaleString('default', { month: 'long' });
+  const dayBills  = bills.filter(b => effectiveDueDay(b, calYear, calMonth) === day);
+  const dayPays   = getPaydays().filter(pd => pd.day === day);
+
+  title.textContent = `${monthName} ${day}, ${calYear}`;
+  panel.style.display = 'block';
+
+  let html = '';
+
+  // ── Income section ──────────────────────────────────────────────────────
+  if (dayPays.length > 0) {
+    html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--green);margin-bottom:6px;">💰 Income Expected</div>`;
+    dayPays.forEach(pd => {
+      const estimated = Math.round(pd.usd * getExRate());
+      const actuals   = getPayIncomes(calYear, calMonth);
+      const actual    = actuals[pd.id];
+      const received  = actual !== undefined;
+      const displayPHP = received ? actual : estimated;
+      html += `<div class="day-bill-row" style="background:${pd.color}11;border-radius:8px;margin-bottom:6px;padding:10px 12px;">
+        <div style="flex:1;">
+          <div class="day-bill-name" style="color:${pd.color};">&#8593; ${pd.label}</div>
+          <div class="day-bill-note">$${pd.usd.toFixed(2)} USD · Est. ₱${estimated.toLocaleString()} from rate</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:var(--text-muted);">Actual ₱</span>
+          <input type="number" min="0" step="1"
+            value="${received ? actual : ''}"
+            placeholder="${estimated}"
+            style="width:100px;font-size:13px;font-weight:700;color:${received?pd.color:'var(--text-muted)'};
+                   border:1px solid ${pd.color}66;border-radius:6px;padding:4px 7px;
+                   background:var(--surface);text-align:right;font-family:inherit;"
+            onchange="savePayIncome(${calYear},${calMonth},'${pd.id}',this.value||null);renderMoneyPage();openDayPanel(${day});"
+            title="Enter actual PHP received from Wise"
+          />
+          ${received ? `<button onclick="savePayIncome(${calYear},${calMonth},'${pd.id}',null);renderMoneyPage();openDayPanel(${day});"
+            style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text-muted);padding:2px;" title="Reset to estimate">↩</button>` : ''}
+        </div>
+      </div>`;
+    });
+    const payTotal = dayPays.reduce((s, pd) => s + getPaydayPHP(pd, calYear, calMonth), 0);
+    html += `<div style="display:flex;justify-content:space-between;padding:8px 0 10px;border-bottom:1px solid var(--border);margin-bottom:10px;font-size:13px;font-weight:700;color:var(--green);">
+      <span>Total income this day</span><span>₱${Math.round(payTotal).toLocaleString()}</span>
+    </div>`;
+  }
+
+  // ── Bills section ───────────────────────────────────────────────────────
+  if (dayBills.length > 0) {
+    if (dayPays.length > 0) {
+      html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--red);margin-bottom:6px;">🧾 Bills Due</div>`;
+    }
+    html += dayBills.map(b => {
+      const amt    = getBillAmount(b, calYear, calMonth);
+      const status = getBillStatus(b, calYear, calMonth);
+      return `<div class="day-bill-row">
+        <div style="flex:1;">
+          <div class="day-bill-name">${b.cat.split(' ')[0]} ${b.name}</div>
+          ${b.note ? `<div class="day-bill-note">${b.note}</div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${b.variable
+            ? `<div class="day-bill-amt"><input type="number" value="${amt}" min="0" step="1"
+                 onchange="saveMonthOverride(${calYear},${calMonth},'${b.id}','amount',this.value);renderMoneyPage();" /></div>`
+            : `<div class="day-bill-amt">₱${amt.toLocaleString()}</div>`
+          }
+          <button class="day-bill-status status-${status}" onclick="cycleMonthStatus('${b.id}')">
+            ${status === 'paid' ? 'PAID ✅' : status === 'overdue' ? 'OVERDUE ⚠' : 'UNPAID'}
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+    const dayTotal = dayBills.reduce((s, b) => s + getBillAmount(b, calYear, calMonth), 0);
+    html += `<div style="display:flex;justify-content:space-between;padding:10px 0 2px;border-top:1px solid var(--border);margin-top:4px;font-size:13px;font-weight:700;">
+      <span>Total due this day</span><span>₱${Math.round(dayTotal).toLocaleString()}</span>
+    </div>`;
+  }
+
+  if (!html) html = `<div style="color:var(--text-muted);font-size:13px;padding:10px 0;">Nothing scheduled on this day.</div>`;
+
+  body.innerHTML = html;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function cycleMonthStatus(billId) {
+  const b      = bills.find(x => x.id === billId);
+  if (!b) return;
+  const cur    = getBillStatus(b, calYear, calMonth);
+  const cycle  = { unpaid: 'paid', paid: 'overdue', overdue: 'unpaid' };
+  const next   = cycle[cur] || 'unpaid';
+  saveMonthOverride(calYear, calMonth, billId, 'status', next);
+  openDayPanel(calSelectedDay);
+  renderMoneyPage();
+}
+
+// ─── SAVINGS HELPERS (used by calendar + stats) ────────────────────────────
+function isSavingsBill(b) { return b.group === 'savings'; }          // Family Savings (counts toward ₱100k goal)
+function isOlieSavings(b) { return b.group === 'olie-savings'; }     // Olie personal savings (hot pink, separate)
+
+// ─── RENDER CALENDAR ───────────────────────────────────────────────────────
+function renderCalendar() {
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const title  = document.getElementById('cal-title');
+  if (title) title.textContent = `${MONTHS[calMonth]} ${calYear}`;
+
+  const grid      = document.getElementById('cal-grid');
+  if (!grid) return;
+
+  const firstDay  = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+  const daysInMo  = new Date(calYear, calMonth + 1, 0).getDate();
+  const today     = new Date();
+  const isThisMo  = today.getFullYear() === calYear && today.getMonth() === calMonth;
+  const todayDate = today.getDate();
+
+  // Build day-to-bills map
+  const byDay = {};
+  bills.forEach(b => {
+    if (b.freq === 'biweekly-payday') {
+      // Show savings on the same days as the matching client's paydays
+      computePaydays(calYear, calMonth)
+        .filter(pd => pd.client === b.paydayClient)
+        .forEach(pd => {
+          if (!byDay[pd.day]) byDay[pd.day] = [];
+          byDay[pd.day].push(b);
+        });
+      return;
+    }
+    const d = effectiveDueDay(b, calYear, calMonth);
+    if (!d) return;
+    if (!byDay[d]) byDay[d] = [];
+    byDay[d].push(b);
+  });
+
+  // Build day-to-paydays map
+  const byDayPay = {};
+  getPaydays().forEach(pd => {
+    if (!byDayPay[pd.day]) byDayPay[pd.day] = [];
+    byDayPay[pd.day].push(pd);
+  });
+
+  // Color coding: hot pink = olie savings, green = family savings, yellow = bills, cyan = income
+  function billColor(b) {
+    if (isOlieSavings(b)) return '#ec4899'; // hot pink — Olie personal
+    if (isSavingsBill(b)) return '#22c55e'; // green — family savings
+    return '#f59e0b'; // yellow — all other bills
+  }
+
+  let html = '';
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-cell empty"></div>`;
+
+  for (let d = 1; d <= daysInMo; d++) {
+    const dayBills  = byDay[d]    || [];
+    const dayPays   = byDayPay[d] || [];
+    const isToday   = isThisMo && d === todayDate;
+    const isSel     = calSelectedDay === d;
+    const cls       = `cal-cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}`;
+    const clickable = dayBills.length > 0 || dayPays.length > 0;
+
+    // Income pills (green, shown first)
+    const incomePills = dayPays.map(pd => {
+      const php      = getPaydayPHP(pd, calYear, calMonth);
+      const received = isPaydayReceived(pd.id, calYear, calMonth);
+      const amtStr   = php >= 1000 ? `₱${(php/1000).toFixed(php%1000===0?0:1)}k` : `₱${Math.round(php)}`;
+      return `<div class="cal-pill-sm" style="background:${pd.color}22;color:${pd.color};${received?'opacity:.65':''}font-weight:700;border:1px solid ${pd.color}44;">
+        &#8593; ${pd.label} <strong>${amtStr}</strong>${received?' ✅':''}
+      </div>`;
+    }).join('');
+
+    // Bill pills
+    const billPills = dayBills.map(b => {
+      const c      = billColor(b);
+      const st     = getBillStatus(b, calYear, calMonth);
+      const amt    = getBillAmount(b, calYear, calMonth);
+      const faded  = st === 'paid' ? 'opacity:.5;' : '';
+      const icon   = st === 'paid' ? ' ✅' : st === 'overdue' ? ' ⚠' : '';
+      const amtStr = amt >= 1000 ? `₱${(amt/1000).toFixed(amt%1000===0?0:1)}k` : `₱${amt}`;
+      return `<div class="cal-pill-sm" style="background:${c}22;color:${c};${faded}">
+        ${b.name} <strong>${amtStr}</strong>${icon}
+      </div>`;
+    }).join('');
+
+    html += `<div class="${cls}" ${clickable ? `onclick="openDayPanel(${d})"` : ''}>
+      <div class="cal-day-num">${d}${isToday ? ' •' : ''}</div>
+      ${incomePills}${billPills}
+    </div>`;
+  }
+
+  const totalCells = firstDay + daysInMo;
+  const remainder  = totalCells % 7;
+  if (remainder !== 0) {
+    for (let i = 0; i < 7 - remainder; i++) html += `<div class="cal-cell empty"></div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+// ─── RENDER MONEY PAGE ─────────────────────────────────────────────────────
+function renderMoneyPage() {
+  const exRate   = getExRate();
+  const income   = calcMonthlyIncome();
+  const totalUSD = getPaydays().reduce((s, pd) => s + pd.usd, 0);
+  const totalPHP = income.reduce((s, i) => s + i.php, 0);
+
+  const erInput = document.getElementById('exrate-input');
+  if (erInput) erInput.value = exRate;
+  const erNote = document.getElementById('exrate-note');
+  const rateFetched = localStorage.getItem('pcrm4_exrate_fetched');
+  if (erNote) {
+    const ago = rateFetched ? (() => {
+      const m = Math.round((Date.now() - new Date(rateFetched).getTime()) / 60000);
+      return m < 2 ? 'just now' : m < 60 ? `${m}m ago` : `${Math.round(m/60)}h ago`;
+    })() : null;
+    erNote.textContent = ago ? `Rate updated ${ago}` : '';
+  }
+
+  // Categorize totals using current month overrides
+  const SAVINGS_GOAL = 100000;
+  const savingsTotal = bills.filter(b => isSavingsBill(b))
+    .reduce((s, b) => {
+      const amt = getBillAmount(b, calYear, calMonth);
+      if (b.freq === 'biweekly-payday') {
+        const n = computePaydays(calYear, calMonth).filter(pd => pd.client === b.paydayClient).length;
+        return s + amt * n;
+      }
+      return s + amt;
+    }, 0);
+  const loansTotal   = bills.filter(b => b.group === 'loan')
+    .reduce((s, b) => s + getBillAmount(b, calYear, calMonth), 0);
+  const fixedTotal   = bills.filter(b => b.group !== 'loan' && !isSavingsBill(b) && !isOlieSavings(b))
+    .reduce((s, b) => s + getBillAmount(b, calYear, calMonth), 0);
+  const totalBills   = bills.reduce((s, b) => s + getBillAmount(b, calYear, calMonth), 0);
+  const leftoverPHP  = totalPHP - totalBills;
+  const unpaidCount  = bills.filter(b => !isSavingsBill(b) && !isOlieSavings(b) && getBillStatus(b, calYear, calMonth) !== 'paid').length;
+  const savingsPct   = Math.min(100, Math.round(savingsTotal / SAVINGS_GOAL * 100));
+
+  // Progress: income received vs total
+  const incomeReceivedPHP = getPaydays().reduce((s, pd) =>
+    isPaydayReceived(pd.id, calYear, calMonth) ? s + getPaydayPHP(pd, calYear, calMonth) : s, 0);
+  const incomePct = totalPHP > 0 ? Math.min(100, Math.round(incomeReceivedPHP / totalPHP * 100)) : 0;
+  const incomeReceived = getPaydays().filter(pd => isPaydayReceived(pd.id, calYear, calMonth)).length;
+  const incomeTotal    = getPaydays().length;
+
+  // Progress: bills paid vs total
+  const billsPaidTotal = bills.filter(b => b.group !== 'loan' && !isSavingsBill(b) && !isOlieSavings(b) && getBillStatus(b, calYear, calMonth) === 'paid')
+    .reduce((s, b) => s + getBillAmount(b, calYear, calMonth), 0);
+  const billsPct = fixedTotal > 0 ? Math.min(100, Math.round(billsPaidTotal / fixedTotal * 100)) : 0;
+  const billsPaidCount = bills.filter(b => b.group !== 'loan' && !isSavingsBill(b) && !isOlieSavings(b) && getBillStatus(b, calYear, calMonth) === 'paid').length;
+  const billsTotalCount = bills.filter(b => b.group !== 'loan' && !isSavingsBill(b) && !isOlieSavings(b)).length;
+
+  // Progress: loans paid vs total
+  const loansPaidTotal = bills.filter(b => b.group === 'loan' && getBillStatus(b, calYear, calMonth) === 'paid')
+    .reduce((s, b) => s + getBillAmount(b, calYear, calMonth), 0);
+  const loansPct = loansTotal > 0 ? Math.min(100, Math.round(loansPaidTotal / loansTotal * 100)) : 0;
+  const loansPaidCount  = bills.filter(b => b.group === 'loan' && getBillStatus(b, calYear, calMonth) === 'paid').length;
+  const loansTotalCount = bills.filter(b => b.group === 'loan').length;
+
+  // Progress: savings set aside vs goal
+  const savingsPaidTotal = bills.filter(b => isSavingsBill(b) && getBillStatus(b, calYear, calMonth) === 'paid')
+    .reduce((s, b) => {
+      const amt = getBillAmount(b, calYear, calMonth);
+      if (b.freq === 'biweekly-payday') {
+        return s + amt * computePaydays(calYear, calMonth).filter(pd => pd.client === b.paydayClient).length;
+      }
+      return s + amt;
+    }, 0);
+  const savingsDonePct = Math.min(100, Math.round(savingsPaidTotal / SAVINGS_GOAL * 100));
+
+  function progressBar(pct, color, trackColor) {
+    return `<div style="margin-top:6px;background:${trackColor||'var(--bg-card)'};border-radius:4px;height:6px;overflow:hidden;">
+      <div style="height:100%;width:${pct}%;background:${color};border-radius:4px;transition:width .5s ease;"></div>
+    </div>`;
+  }
+
+  // Stats cards
+  document.getElementById('money-stats').innerHTML = `
+    <div class="money-card" style="border-color:#22c55e44;">
+      <div class="m-label" style="color:#22c55e;">Monthly Income</div>
+      <div class="m-value text-green">₱${Math.round(totalPHP).toLocaleString()}</div>
+      <div class="m-sub">$${totalUSD.toFixed(0)} USD @ ₱${exRate}/$</div>
+      ${progressBar(incomePct, '#22c55e')}
+      <div style="font-size:10px;color:#22c55e;margin-top:3px;display:flex;justify-content:space-between;">
+        <span>₱${Math.round(incomeReceivedPHP).toLocaleString()} received</span>
+        <span>${incomeReceived}/${incomeTotal} paydays</span>
+      </div>
+    </div>
+    <div class="money-card" style="border-color:#f59e0b44;">
+      <div class="m-label" style="color:#f59e0b;">Bills &amp; Expenses</div>
+      <div class="m-value text-yellow">₱${Math.round(fixedTotal).toLocaleString()}</div>
+      <div class="m-sub">${unpaidCount} still unpaid</div>
+      ${progressBar(billsPct, '#f59e0b')}
+      <div style="font-size:10px;color:#f59e0b;margin-top:3px;display:flex;justify-content:space-between;">
+        <span>₱${Math.round(billsPaidTotal).toLocaleString()} paid</span>
+        <span>${billsPaidCount}/${billsTotalCount} bills</span>
+      </div>
+    </div>
+    <div class="money-card" style="border-color:#ef444444;">
+      <div class="m-label" style="color:var(--red);">Loans &amp; Installments</div>
+      <div class="m-value" style="color:var(--red);">₱${Math.round(loansTotal).toLocaleString()}</div>
+      <div class="m-sub">loans, CC, devices</div>
+      ${progressBar(loansPct, '#ef4444')}
+      <div style="font-size:10px;color:#ef4444;margin-top:3px;display:flex;justify-content:space-between;">
+        <span>₱${Math.round(loansPaidTotal).toLocaleString()} paid</span>
+        <span>${loansPaidCount}/${loansTotalCount} loans</span>
+      </div>
+    </div>
+    <div class="money-card" style="border-color:#22c55e44;">
+      <div class="m-label" style="color:#22c55e;">Family Savings</div>
+      <div class="m-value" style="color:#22c55e;">₱${Math.round(savingsTotal).toLocaleString()}</div>
+      <div class="m-sub">Target: ₱${SAVINGS_GOAL.toLocaleString()}/month</div>
+      ${progressBar(savingsDonePct, '#22c55e')}
+      <div style="font-size:10px;color:#22c55e;margin-top:3px;display:flex;justify-content:space-between;">
+        <span>₱${Math.round(savingsPaidTotal).toLocaleString()} set aside</span>
+        <span>${savingsDonePct}% of goal</span>
+      </div>
+    </div>
+  `;
+
+  // Month balance banner
+  const olieTotal      = bills.filter(b => isOlieSavings(b)).reduce((s, b) => s + getBillAmount(b, calYear, calMonth), 0);
+  const totalOutgoing  = fixedTotal + loansTotal + savingsTotal + olieTotal;
+  const netBalance     = Math.round(totalPHP - totalOutgoing);
+  const banner         = document.getElementById('month-balance-banner');
+  if (netBalance < 0) {
+    banner.style.display = 'block';
+    banner.innerHTML = `<div style="background:#ef444418;border:1px solid #ef444455;border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:22px;">⚠️</span>
+      <div style="flex:1;">
+        <div style="font-weight:700;color:#ef4444;font-size:14px;">You're projecting negative this month</div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px;">
+          Income ₱${Math.round(totalPHP).toLocaleString()} − Outgoing ₱${totalOutgoing.toLocaleString()} = <strong style="color:#ef4444;">−₱${Math.abs(netBalance).toLocaleString()}</strong> shortfall
+        </div>
+      </div>
+    </div>`;
+  } else {
+    banner.style.display = 'block';
+    banner.innerHTML = `<div style="background:#22c55e12;border:1px solid #22c55e33;border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:22px;">✅</span>
+      <div style="flex:1;">
+        <div style="font-weight:700;color:#22c55e;font-size:14px;">You're in the green this month</div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px;">
+          Income ₱${Math.round(totalPHP).toLocaleString()} − Outgoing ₱${totalOutgoing.toLocaleString()} = <strong style="color:#22c55e;">+₱${netBalance.toLocaleString()}</strong> surplus
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Render calendar
+  renderCalendar();
+
+  // Re-open day panel if one was selected
+  if (calSelectedDay) openDayPanel(calSelectedDay);
+
+  // Income breakdown — per client, per payday event
+  const monthLabel = new Date(calYear, calMonth, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+  document.getElementById('income-breakdown').innerHTML =
+    `<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">
+      Click a payday date on the calendar above to enter the actual ₱ you received from Wise.
+    </div>` +
+    income.map(inc => {
+      const paydaysForClient = getPaydays().filter(pd => pd.client === inc.client);
+      return `<div class="income-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:${inc.color};flex-shrink:0;"></div>
+          <div style="font-size:13px;font-weight:700;flex:1;">${inc.client}</div>
+          <div style="font-size:14px;font-weight:800;color:var(--green);">₱${Math.round(inc.php).toLocaleString()}</div>
+        </div>
+        <div style="padding-left:18px;">
+          ${paydaysForClient.map(pd => {
+            const phpAmt  = getPaydayPHP(pd, calYear, calMonth);
+            const received = isPaydayReceived(pd.id, calYear, calMonth);
+            return `<div style="display:flex;justify-content:space-between;font-size:11px;color:${received?pd.color:'var(--text-muted)'};padding:1px 0;">
+              <span>Day ${pd.day} — $${pd.usd.toFixed(2)}</span>
+              <span style="font-weight:${received?700:400};">₱${Math.round(phpAmt).toLocaleString()}${received?' ✅':' (est.)'}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('') + `
+    <div style="display:flex;justify-content:space-between;padding:10px 0 2px;border-top:1px solid var(--border);margin-top:6px;">
+      <span style="font-size:13px;font-weight:700;">Total</span>
+      <div style="text-align:right;">
+        <span style="font-size:12px;color:var(--text-muted);">$${totalUSD.toFixed(2)} USD · </span>
+        <span style="font-size:14px;font-weight:800;color:var(--green);">₱${Math.round(totalPHP).toLocaleString()}</span>
+      </div>
+    </div>`;
+
+  // Bills list
+  const sortedBills = [...bills].sort((a, b) => a.dueDay - b.dueDay);
+  document.getElementById('bills-list').innerHTML = sortedBills.length === 0
+    ? `<div style="color:var(--text-muted);font-size:13px;padding:16px 0;text-align:center;">No bills added yet. Click "+ Add Bill" to start.</div>`
+    : sortedBills.map(b => `
+      <div class="bill-row">
+        <div class="bill-icon">${b.cat.split(' ')[0]}</div>
+        <div class="bill-info">
+          <div class="bill-name">${b.name}</div>
+          <div class="bill-meta">
+            <span>${b.cat.replace(/^\S+\s/, '')}</span>
+            ${b.dueDay ? `<span>Due: ${b.dueDay}${ordinal(b.dueDay)}</span>` : ''}
+            ${b.freq !== 'monthly' ? `<span style="text-transform:capitalize;">${b.freq}</span>` : ''}
+            ${b.note ? `<span>${b.note}</span>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="bill-amount">₱${Number(b.amount).toLocaleString()}</span>
+          <select class="bill-status-badge bill-${b.status}" onchange="changeBillStatus('${b.id}',this.value)" style="border:none;background:transparent;cursor:pointer;font-family:inherit;font-weight:700;color:inherit;font-size:10px;padding:2px 4px;">
+            <option value="unpaid" ${b.status==='unpaid'?'selected':''}>UNPAID</option>
+            <option value="paid"   ${b.status==='paid'  ?'selected':''}>PAID ✅</option>
+            <option value="overdue"${b.status==='overdue'?'selected':''}>OVERDUE ⚠</option>
+          </select>
+          <button class="btn secondary xs" onclick="editBill('${b.id}')">✏️</button>
+          <button class="btn danger xs" onclick="deleteBill('${b.id}')">✕</button>
+        </div>
+      </div>`).join('');
+
+  // Budget summary
+  const bills_php_monthly = totalBills;
+  const income_php = totalPHP;
+  const savings_pct = Math.min(100, Math.max(0, (leftoverPHP / income_php) * 100));
+  const bills_pct   = Math.min(100, (bills_php_monthly / income_php) * 100);
+
+  document.getElementById('budget-summary').innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+        <span style="color:var(--text-muted)">Bills</span>
+        <span style="font-weight:700;color:var(--yellow)">₱${Math.round(bills_php_monthly).toLocaleString()} (${bills_pct.toFixed(0)}%)</span>
+      </div>
+      <div class="savings-bar-wrap"><div class="savings-bar-fill" style="width:${bills_pct}%;background:linear-gradient(90deg,var(--yellow),var(--red))"></div></div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+        <span style="color:var(--text-muted)">Available after bills</span>
+        <span style="font-weight:700;color:var(--green)">₱${Math.round(Math.max(0,leftoverPHP)).toLocaleString()} (${Math.max(0,savings_pct).toFixed(0)}%)</span>
+      </div>
+      <div class="savings-bar-wrap"><div class="savings-bar-fill" style="width:${Math.max(0,savings_pct)}%"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;">
+      <div style="background:var(--surface2);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">INCOME / MO</div>
+        <div style="font-size:15px;font-weight:800;color:var(--green)">₱${Math.round(income_php).toLocaleString()}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">BILLS / MO</div>
+        <div style="font-size:15px;font-weight:800;color:var(--yellow)">₱${Math.round(bills_php_monthly).toLocaleString()}</div>
+      </div>
+    </div>
+  `;
+
+  // Goals
+  document.getElementById('goals-list').innerHTML = goals.length === 0
+    ? `<div style="color:var(--text-muted);font-size:13px;padding:16px 0;text-align:center;">No goals yet. Click "+ Add Goal".</div>`
+    : goals.map(g => {
+        const pct = Math.min(100, g.target > 0 ? Math.round((g.saved / g.target) * 100) : 0);
+        const rem = g.target - g.saved;
+        return `
+        <div style="padding:12px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="font-size:20px;">${g.icon}</span>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:700;">${g.name}</div>
+              <div style="font-size:11px;color:var(--text-muted);">₱${Number(g.saved).toLocaleString()} / ₱${Number(g.target).toLocaleString()} ${g.date ? '· Target: ' + displayDate(g.date) : ''}</div>
+            </div>
+            <div style="display:flex;gap:4px;">
+              <span style="font-size:13px;font-weight:800;color:var(--accent)">${pct}%</span>
+              <button class="btn secondary xs" onclick="editGoal('${g.id}')">✏️</button>
+              <button class="btn danger xs" onclick="deleteGoal('${g.id}')">✕</button>
+            </div>
+          </div>
+          <div class="savings-bar-wrap"><div class="savings-bar-fill" style="width:${pct}%"></div></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:5px;">₱${rem.toLocaleString()} remaining${g.target > 0 && leftoverPHP > 0 ? ' · ~' + Math.ceil(rem / leftoverPHP) + ' mo to go' : ''}</div>
+        </div>`;
+      }).join('');
+}
+
+function ordinal(n) {
+  const s = ['th','st','nd','rd'], v = n % 100;
+  return s[(v-20)%10] || s[v] || s[0];
+}
+
+// ─── BILL CRUD ─────────────────────────────────────────────────────────────
+function openBillModal(id) {
+  editingBillId = id || null;
+  const b = id ? bills.find(x => x.id === id) : null;
+  document.getElementById('bill-modal-title').textContent = b ? 'Edit Bill' : 'New Bill';
+  document.getElementById('b-name').value    = b?.name    || '';
+  document.getElementById('b-cat').value     = b?.cat     || '🌐 Internet';
+  document.getElementById('b-amount').value  = b?.amount  || '';
+  document.getElementById('b-due-day').value = b?.dueDay  || '';
+  document.getElementById('b-freq').value    = b?.freq    || 'monthly';
+  document.getElementById('b-status').value  = b?.status  || 'unpaid';
+  document.getElementById('b-note').value    = b?.note    || '';
+  openModal('bill-modal');
+}
+function saveBill() {
+  const name = document.getElementById('b-name').value.trim();
+  if (!name) { toast('⚠ Enter a bill name'); return; }
+  const data = {
+    name,
+    cat:    document.getElementById('b-cat').value,
+    amount: parseFloat(document.getElementById('b-amount').value) || 0,
+    dueDay: parseInt(document.getElementById('b-due-day').value) || null,
+    freq:   document.getElementById('b-freq').value,
+    status: document.getElementById('b-status').value,
+    note:   document.getElementById('b-note').value,
+  };
+  if (editingBillId) Object.assign(bills.find(b => b.id === editingBillId), data);
+  else bills.push({ id: uid(), created: Date.now(), ...data });
+  DB.save('bills', bills);
+  closeModal('bill-modal');
+  toast(editingBillId ? '✅ Bill updated' : '✅ Bill added');
+  renderMoneyPage();
+}
+function editBill(id) { openBillModal(id); }
+function deleteBill(id) { if (!confirm('Delete this bill?')) return; bills = bills.filter(b => b.id !== id); DB.save('bills', bills); renderMoneyPage(); toast('🗑 Deleted'); }
+function changeBillStatus(id, status) {
+  const b = bills.find(x => x.id === id);
+  if (b) { b.status = status; DB.save('bills', bills); renderMoneyPage(); toast('✅ Status updated'); }
+}
+function changeBillStatusCycle(id) {
+  const b = bills.find(x => x.id === id);
+  if (!b) return;
+  const cycle = { unpaid: 'paid', paid: 'overdue', overdue: 'unpaid' };
+  b.status = cycle[b.status] || 'unpaid';
+  DB.save('bills', bills);
+  renderMoneyPage();
+  toast(b.status === 'paid' ? `✅ ${b.name} marked paid` : b.status === 'overdue' ? `⚠ ${b.name} marked overdue` : `${b.name} marked unpaid`);
+}
+
+// ─── GOAL CRUD ─────────────────────────────────────────────────────────────
+function openGoalModal(id) {
+  editingGoalId = id || null;
+  const g = id ? goals.find(x => x.id === id) : null;
+  document.getElementById('goal-modal-title').textContent = g ? 'Edit Goal' : 'New Savings Goal';
+  document.getElementById('g-name').value   = g?.name   || '';
+  document.getElementById('g-icon').value   = g?.icon   || '🎯';
+  document.getElementById('g-target').value = g?.target || '';
+  document.getElementById('g-saved').value  = g?.saved  || '';
+  document.getElementById('g-date').value   = g?.date   || '';
+  openModal('goal-modal');
+}
+function saveGoal() {
+  const name = document.getElementById('g-name').value.trim();
+  if (!name) { toast('⚠ Enter a goal name'); return; }
+  const data = {
+    name,
+    icon:   document.getElementById('g-icon').value,
+    target: parseFloat(document.getElementById('g-target').value) || 0,
+    saved:  parseFloat(document.getElementById('g-saved').value)  || 0,
+    date:   document.getElementById('g-date').value,
+  };
+  if (editingGoalId) Object.assign(goals.find(g => g.id === editingGoalId), data);
+  else goals.push({ id: uid(), created: Date.now(), ...data });
+  DB.save('goals', goals);
+  closeModal('goal-modal');
+  toast(editingGoalId ? '✅ Goal updated' : '✅ Goal added');
+  renderMoneyPage();
+}
+function editGoal(id) { openGoalModal(id); }
+function deleteGoal(id) { if (!confirm('Delete this goal?')) return; goals = goals.filter(g => g.id !== id); DB.save('goals', goals); renderMoneyPage(); toast('🗑 Deleted'); }
+
+// ─── INTEGRATIONS ──────────────────────────────────────────────────────────
+
+// ── Storage helpers ──
+function getCUToken()    { return localStorage.getItem('pcrm4_cu_token') || ''; }
+function getCULastSync() { return localStorage.getItem('pcrm4_cu_last_sync') || ''; }
+function getDojouCreds() {
+  return {
+    sessionCookie: localStorage.getItem('pcrm4_dojou_session') || '',
+    lastSync:      localStorage.getItem('pcrm4_dojou_last_sync') || '',
+  };
+}
+function getDojouTokenExpiry(cookie) {
+  try {
+    const payload = JSON.parse(atob(cookie.split('.')[1]));
+    if (payload.exp) {
+      const d = new Date(payload.exp * 1000);
+      return d.toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+    }
+  } catch {}
+  return null;
+}
+
+// ── UI helpers ──
+function syncLog(id, msg, type = 'info') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('show');
+  const color = type === 'error' ? 'var(--red)' : type === 'success' ? 'var(--green)' : 'var(--text-muted)';
+  el.innerHTML += `<div style="color:${color}">${new Date().toLocaleTimeString()} — ${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog(id) {
+  const el = document.getElementById(id);
+  if (el) { el.innerHTML = ''; el.classList.remove('show'); }
+}
+function setPill(id, text, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = `int-pill ${cls}`;
+}
+
+// ── ClickUp status → CRM status mapping ──
+// Accepts the full ClickUp status object { status, type, color }
+// type='closed' = Done regardless of custom name (most reliable)
+// type='open'   = Pending (first status in workflow)
+// type='custom' = check the name
+function mapCUStatus(cuStatus) {
+  if (!cuStatus) return 'pending';
+
+  // Support being called with just a string (fallback)
+  const type = (typeof cuStatus === 'object' ? cuStatus.type : '') || '';
+  const s    = (typeof cuStatus === 'object' ? cuStatus.status : cuStatus || '').toLowerCase().trim();
+
+  // 'closed' type always means Done regardless of custom label
+  if (type === 'closed') return 'done';
+
+  // Explicit status name matches first (most specific)
+  if (s === 'holding' || s === 'on hold' || s === 'hold' || s.includes('hold')) return 'holding';
+  if (s === 'ready to launch' || s === 'ready to publish' || s === 'ready' || s.includes('launch')) return 'done';
+  if (s.includes('complete') || s.includes('done') || s.includes('finish') || s === 'closed') return 'done';
+  if (s.includes('revision') || s.includes('changes') || s.includes('rework'))  return 'revision';
+  if (s.includes('progress') || s.includes('doing')  || s.includes('active'))   return 'in-progress';
+  if (s.includes('approval') || s.includes('review') || s.includes('feedback') || s.includes('sent') || s.includes('deliver')) return 'delivered';
+
+  // 'open' type = first status = pending
+  if (type === 'open') return 'pending';
+
+  return 'pending';
+}
+
+// ── ClickUp priority → CRM priority ──
+function mapCUPriority(cuPriority) {
+  if (!cuPriority) return 'medium';
+  const p = cuPriority.priority || cuPriority;
+  if (p === 1 || p === 'urgent') return 'high';
+  if (p === 2 || p === 'high')   return 'high';
+  if (p === 4 || p === 'low')    return 'low';
+  return 'medium';
+}
+
+// ── Save / load token & creds ──
+function saveClickUpToken() {
+  const val = document.getElementById('cu-token-input').value.trim();
+  if (!val) { toast('⚠ Paste your ClickUp token first'); return; }
+  localStorage.setItem('pcrm4_cu_token', val);
+  toast('✅ ClickUp token saved');
+  initIntegrationsPage();
+}
+function saveDojouCreds() {
+  const cookie = document.getElementById('dojou-session-cookie').value.trim();
+  if (!cookie) { toast('⚠ Paste your dojou_session cookie first'); return; }
+  localStorage.setItem('pcrm4_dojou_session', cookie);
+  toast('✅ Dojou session saved');
+  initIntegrationsPage();
+}
+function toggleTokenVisibility() {
+  const el = document.getElementById('cu-token-input');
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+function toggleDojouVisibility() {
+  const el = document.getElementById('dojou-session-cookie');
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+// ── Init integrations page ──
+function initIntegrationsPage() {
+  const token = getCUToken();
+  const dojou = getDojouCreds();
+
+  const cuInput = document.getElementById('cu-token-input');
+  if (cuInput && token) cuInput.value = token;
+
+  const dojouCookieEl = document.getElementById('dojou-session-cookie');
+  if (dojouCookieEl && dojou.sessionCookie) dojouCookieEl.value = dojou.sessionCookie;
+
+  // Show token expiry
+  const expiryEl = document.getElementById('dojou-token-expiry');
+  if (expiryEl && dojou.sessionCookie) {
+    const exp = getDojouTokenExpiry(dojou.sessionCookie);
+    expiryEl.textContent = exp ? `Token valid until: ${exp}` : '';
+  }
+
+  setPill('cu-status-pill', token ? 'Token saved ✓' : 'Not connected', token ? 'int-connected' : 'int-disconnected');
+  setPill('dojou-status-pill', dojou.sessionCookie ? 'Session saved ✓' : 'Cookie required', dojou.sessionCookie ? 'int-connected' : 'int-disconnected');
+
+  const cuSync = document.getElementById('cu-last-sync-label');
+  if (cuSync && getCULastSync()) cuSync.textContent = 'Last sync: ' + getCULastSync();
+
+  const dojouSync = document.getElementById('dojou-last-sync-label');
+  if (dojouSync && dojou.lastSync) dojouSync.textContent = 'Last sync: ' + dojou.lastSync;
+
+  // Show quick sync button in topbar if token exists
+  const syncBtn = document.getElementById('sync-btn');
+  if (syncBtn) syncBtn.style.display = token ? 'inline-flex' : 'none';
+}
+
+// ── CLICKUP SYNC ──
+async function runClickUpSync() {
+  const token = getCUToken();
+  if (!token) { toast('⚠ Save your ClickUp token first in Integrations'); navigateTo('integrations'); return; }
+
+  clearLog('cu-sync-log');
+  setPill('cu-status-pill', 'Syncing…', 'int-syncing');
+  syncLog('cu-sync-log', 'Connecting to ClickUp…');
+
+  try {
+    // 1. Get user
+    const userRes = await fetch('https://api.clickup.com/api/v2/user', {
+      headers: { Authorization: token }
+    });
+    if (!userRes.ok) throw new Error(`Auth failed (${userRes.status}) — check your token`);
+    const { user } = await userRes.json();
+    syncLog('cu-sync-log', `✓ Logged in as ${user.username} (ID: ${user.id})`);
+
+    // 2. Get workspaces
+    const teamsRes = await fetch('https://api.clickup.com/api/v2/team', {
+      headers: { Authorization: token }
+    });
+    const { teams } = await teamsRes.json();
+    syncLog('cu-sync-log', `✓ Found ${teams.length} workspace(s): ${teams.map(t => t.name).join(', ')}`);
+
+    // CLEAN SLATE: remove ALL previously synced ClickUp tasks before re-importing.
+    // Filter by externalId prefix so we catch tasks regardless of how their source was tagged
+    // in prior versions. Only tasks currently assigned to Patrick in ClickUp will remain.
+    tasks = tasks.filter(t => !(t.externalId && t.externalId.startsWith('clickup_')));
+
+    let imported = 0;
+
+    for (const team of teams) {
+      // Only fetch tasks DIRECTLY ASSIGNED to this user — most accurate signal
+      let page = 0, hasMore = true;
+      while (hasMore) {
+        const url = `https://api.clickup.com/api/v2/team/${team.id}/task?assignees[]=${user.id}&include_closed=false&subtasks=true&page=${page}`;
+        const data = await fetch(url, { headers: { Authorization: token } }).then(r => r.json());
+        const cuTasks = data.tasks || [];
+        hasMore = cuTasks.length === 100;
+        page++;
+
+        for (const ct of cuTasks) {
+          const dueDate = ct.due_date ? new Date(Number(ct.due_date)).toISOString().split('T')[0] : '';
+          const mappedStatus = mapCUStatus(ct.status);
+          tasks.push({
+            id:          uid(),
+            created:     Date.now(),
+            title:       ct.name,
+            client:      'Simplify Living',
+            status:      mappedStatus,
+            priority:    mapCUPriority(ct.priority),
+            due:         dueDate,
+            project:     ct.list?.name || '',
+            notes:       ct.description ? ct.description.slice(0, 200) : '',
+            externalId:  `clickup_${ct.id}`,
+            source:      'clickup',
+            externalUrl: ct.url,
+          });
+          syncLog('cu-sync-log', `  • "${ct.name}" — ClickUp: "${ct.status?.status}" (type: ${ct.status?.type}) → CRM: ${mappedStatus}`);
+          imported++;
+        }
+        if (!hasMore) break;
+      }
+    } // end for team of teams
+
+    DB.save('tasks', tasks);
+    const now = new Date().toLocaleString('en-PH');
+    localStorage.setItem('pcrm4_cu_last_sync', now);
+
+    syncLog('cu-sync-log', `✅ Done — ${imported} task${imported !== 1 ? 's' : ''} assigned to you`, 'success');
+    setPill('cu-status-pill', 'Connected ✓', 'int-connected');
+    const lbl = document.getElementById('cu-last-sync-label');
+    if (lbl) lbl.textContent = 'Last sync: ' + now;
+    toast(`✅ ClickUp synced — ${imported} new task${imported !== 1 ? 's' : ''}`);
+    if (currentPage === 'tasks' || currentPage === 'client-simplify') renderPage(currentPage);
+
+  } catch (err) {
+    syncLog('cu-sync-log', `❌ ${err.message}`, 'error');
+    setPill('cu-status-pill', 'Error', 'int-disconnected');
+    toast('❌ ClickUp sync failed — see Integrations log');
+  }
+}
+
+// quick sync from topbar
+async function quickSync() {
+  if (currentPage !== 'integrations') navigateTo('integrations');
+  await runClickUpSync();
+}
+
+// ── DOJOU SYNC ──
+// Confirmed + fallback task endpoints
+const DOJOU_TASK_ENDPOINTS = [
+  '/api/orders',           // ✅ confirmed 200 OK
+  '/api/tasks/assigned',
+  '/api/tasks/my-tasks',
+  '/api/tasks',
+  '/api/user/tasks',
+  '/api/boards/tasks',
+];
+
+function mapDojouStatus(s) {
+  if (!s) return 'pending';
+  const lower = (s + '').toLowerCase().replace(/\s+/g, '');
+  if (lower === 'inprogress')           return 'in-progress';
+  if (lower === 'awaitingrequirements') return 'pending';
+  if (lower === 'pendingqc')            return 'pending-qc';
+  if (lower === 'qc')                   return 'pending-qc';
+  if (lower === 'delivered')            return 'delivered';
+  if (lower === 'inrevision')           return 'revision';
+  if (lower === 'completed')            return 'done';
+  // fallback fuzzy match
+  if (lower.includes('progress'))  return 'in-progress';
+  if (lower.includes('revision'))  return 'revision';
+  if (lower.includes('qc'))        return 'pending-qc';
+  if (lower.includes('deliver'))   return 'delivered';
+  if (lower.includes('await'))     return 'pending';
+  return 'pending';
+}
+
+async function runDojouSync() {
+  const { sessionCookie } = getDojouCreds();
+  if (!sessionCookie) { toast('⚠ Paste your Dojou session cookie first'); return; }
+
+  clearLog('dojou-sync-log');
+  setPill('dojou-status-pill', 'Syncing…', 'int-syncing');
+  syncLog('dojou-sync-log', '🔄 Connecting to crm.dojoumedia.com…');
+
+  try {
+    // Route through local proxy (no CORS issues)
+    const DOJOU_BASE = window.location.protocol === 'file:' ? 'http://localhost:3001/dojou' : '/dojou';
+
+    // ── Fetch orders directly using session cookie ───────────────
+    let dojouTasks = null;
+    for (const ep of DOJOU_TASK_ENDPOINTS) {
+      try {
+        const res = await fetch(`${DOJOU_BASE}${ep}`, {
+          headers: { 'X-Dojou-Session': sessionCookie },
+          credentials: 'include',
+        });
+        if (res.status === 401) throw new Error('Session expired — paste a fresh dojou_session cookie in settings.');
+        if (!res.ok) { syncLog('dojou-sync-log', `  ${ep} → ${res.status}`); continue; }
+
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('json')) { syncLog('dojou-sync-log', `  ${ep} → not JSON (${ct.split(';')[0]})`); continue; }
+
+        const body = await res.json();
+
+        // Log the top-level keys so we can see the response shape
+        const keys = Object.keys(body || {});
+        syncLog('dojou-sync-log', `  ${ep} → 200 OK, keys: [${Array.isArray(body) ? 'array len=' + body.length : keys.join(', ')}]`);
+
+        const arr = Array.isArray(body)        ? body
+                  : Array.isArray(body?.orders)  ? body.orders
+                  : Array.isArray(body?.tasks)   ? body.tasks
+                  : Array.isArray(body?.data)    ? body.data
+                  : Array.isArray(body?.items)   ? body.items
+                  : Array.isArray(body?.results) ? body.results
+                  : null;
+
+        if (arr !== null) {
+          dojouTasks = arr;
+          syncLog('dojou-sync-log', `✓ Found ${arr.length} items at ${ep}`);
+          break;
+        } else {
+          syncLog('dojou-sync-log', `  (no array found — share the keys above with Patrick so I can fix the mapping)`);
+        }
+      } catch (e) {
+        if (e.message.includes('Session expired')) throw e;
+        syncLog('dojou-sync-log', `  ${ep} → ❌ ${e.message}`);
+      }
+    }
+
+    if (dojouTasks === null) {
+      syncLog('dojou-sync-log', '⚠ Could not connect. If you see "Failed to fetch" above, the proxy is not running.', 'error');
+      syncLog('dojou-sync-log', '👉 Open Terminal and run: node "/Users/patrickangeles/Library/Application Support/Claude/local-agent-mode-sessions/ad62f775-97d2-4362-842b-9b7b976264d0/95d1c9b6-7063-442f-b237-c72a36881039/local_d92cb95f-91c5-41a6-ad33-41e87bae9cac/outputs/dojou-proxy.js"', 'error');
+      setPill('dojou-status-pill', 'Proxy not running', 'int-disconnected');
+      return;
+    }
+
+    // ── Step 4: Import tasks ─────────────────────────────────────
+    let imported = 0, updated = 0;
+    for (const dt of dojouTasks) {
+      const externalId = `dojou_${dt.id || dt._id}`;
+      const existing = tasks.find(t => t.externalId === externalId);
+      const clientName = dt.customer?.displayName || dt.customer?.name || '';
+      const gigType    = [dt.gigUsed, dt.packageTier].filter(Boolean).join(' · ');
+      const rawDue     = dt.deadline || dt.due_date || dt.dueDate || '';
+      const mapped = {
+        title:       clientName ? `${clientName} — ${gigType || 'Order'}` : (gigType || '(Untitled)'),
+        client:      'Dojou Media',
+        status:      mapDojouStatus(dt.orderStatus || dt.status),
+        priority:    'medium',
+        due:         rawDue ? new Date(rawDue).toISOString().split('T')[0] : '',
+        project:     gigType,
+        notes:       (dt.internalNotes || dt.notes || '').slice(0, 300),
+        externalId,
+        source:      'dojou',
+        externalUrl: 'https://crm.dojoumedia.com/board',
+      };
+      if (existing) { Object.assign(existing, mapped); updated++; }
+      else { tasks.push({ id: uid(), created: Date.now(), ...mapped }); imported++; }
+    }
+
+    DB.save('tasks', tasks);
+    const now = new Date().toLocaleString('en-PH');
+    localStorage.setItem('pcrm4_dojou_last_sync', now);
+    syncLog('dojou-sync-log', `✅ Done — ${imported} new, ${updated} updated`, 'success');
+    setPill('dojou-status-pill', 'Connected ✓', 'int-connected');
+    toast(`✅ Dojou synced — ${imported} new, ${updated} updated`);
+    if (currentPage === 'tasks' || currentPage === 'client-dojou') renderPage(currentPage);
+
+  } catch (err) {
+    const msg = err.message || '';
+    syncLog('dojou-sync-log', `❌ ${msg}`, 'error');
+
+    if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('networkerror') || msg.toLowerCase().includes('cors')) {
+      syncLog('dojou-sync-log',
+        '🚫 Proxy not running — open Terminal, run: node dojou-proxy.js — then try syncing again.', 'error');
+    } else if (msg.includes('401') || msg.includes('403')) {
+      syncLog('dojou-sync-log', 'ℹ Wrong email or password — double-check your Dojou credentials above.', 'error');
+    } else {
+      syncLog('dojou-sync-log', 'ℹ Open DevTools (F12) → Console tab → sync again → share the red error text with me so I can fix this.', 'error');
+    }
+    setPill('dojou-status-pill', 'Error', 'int-disconnected');
+  }
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+seedData();
+
+// ─── BILL PATCH v3 ─────────────────────────────────────────────────────────
+(function patchBillsV3() {
+  if (localStorage.getItem('pcrm4_patch_v3')) return;
+  const fixes = {
+    'iCloud':              { amount: 599,  dueDay: 27 },
+    'CapCut':              { amount: 359,  dueDay: 29 },
+    'Disney+':             { amount: 599,  dueDay: 30 },
+    'Canva':               { amount: 299,  dueDay: 23 },
+    'Motor Loan':          { dueDay: 10,   group: 'loan', note: 'Due: 10th every month' },
+    'iPhone Installment':  { dueDay: 13,   group: 'loan', note: 'Same date as Daddy CC' },
+    'Macbook Installment': { dueDay: 13,   group: 'loan', note: 'Same date as Daddy CC' },
+  };
+  let changed = false;
+  bills.forEach(b => {
+    if (fixes[b.name]) { Object.assign(b, fixes[b.name]); changed = true; }
+  });
+  // Add Eleven Labs if not already present
+  if (!bills.find(b => b.name === 'Eleven Labs')) {
+    bills.push({ id: uid(), name: 'Eleven Labs', cat: '🤖 Subscriptions', amount: 2800,
+      dueDay: 30, dueMonth: 0, group: 'sub', freq: 'yearly', status: 'unpaid',
+      note: '$50 USD/year — renews January 30', created: Date.now() });
+    changed = true;
+  }
+  if (changed) DB.save('bills', bills);
+  localStorage.setItem('pcrm4_patch_v3', '1');
+})();
+
+// ── Patch v4: Savings restructure — group all savings items, add new ones to reach ₱100k ──
+(function patchBillsV4() {
+  if (localStorage.getItem('pcrm4_patch_v4')) return;
+  // Set group='savings' on all existing savings-category bills
+  let changed = false;
+  bills.forEach(b => {
+    if (b.cat && b.cat.includes('Savings') && b.group !== 'savings') {
+      b.group = 'savings'; changed = true;
+    }
+    // Fix Insurance item: was 'after-blake', rename + recategorize
+    if (b.name === "Olie's Savings/Insurance" || b.name === "Olie's Insurance") {
+      b.name = "Olie's Insurance/Savings";
+      b.cat  = '💰 Savings';
+      b.group = 'savings';
+      changed = true;
+    }
+  });
+  // Add new savings items if not already present
+  const names = bills.map(b => b.name);
+  if (!names.includes('Blake Extra Savings')) {
+    bills.push({ id: uid(), name: 'Blake Extra Savings', cat: '💰 Savings', amount: 10000, dueDay: 1, group: 'savings', freq: 'monthly', status: 'unpaid', note: 'Set aside after Blake/Simplify payday', created: Date.now() });
+    changed = true;
+  }
+  if (!names.includes('SCI Extra Savings')) {
+    bills.push({ id: uid(), name: 'SCI Extra Savings', cat: '💰 Savings', amount: 10000, dueDay: 8, group: 'savings', freq: 'monthly', status: 'unpaid', note: 'Set aside after Glenn/SCI payday', created: Date.now() });
+    changed = true;
+  }
+  if (!names.includes('Dojou Savings')) {
+    bills.push({ id: uid(), name: 'Dojou Savings', cat: '💰 Savings', amount: 40000, dueDay: null, group: 'savings', freq: 'last-friday', status: 'unpaid', note: 'Monthly savings from Dojou income — last Friday', created: Date.now() });
+    changed = true;
+  }
+  if (changed) DB.save('bills', bills);
+  localStorage.setItem('pcrm4_patch_v4', '1');
+})();
+
+// ── Patch v5: Family Savings restructure + Olie hot pink + Grocery split ──────
+(function patchBillsV5() {
+  if (localStorage.getItem('pcrm4_patch_v5')) return;
+  let changed = false;
+
+  // 1) Mark Olie items as 'olie-savings' (hot pink, outside ₱100k goal)
+  bills.forEach(b => {
+    if (b.name === 'Olie Savings') {
+      b.group = 'olie-savings'; b.cat = '🌸 Olie'; changed = true;
+    }
+    if (b.name === "Olie's Insurance/Savings" || b.name === "Olie's Savings/Insurance" || b.name === "Olie's Insurance") {
+      b.name = "Olie's Insurance/Savings"; b.group = 'olie-savings'; b.cat = '🌸 Olie'; changed = true;
+    }
+  });
+
+  // 2) Remove old savings items that are being replaced
+  const removeNames = ['Personal Savings', 'Blake Extra Savings', 'Glenn Savings', 'SCI Extra Savings', 'Dojou Savings'];
+  const before = bills.length;
+  bills = bills.filter(b => !removeNames.includes(b.name));
+  if (bills.length !== before) changed = true;
+
+  // 3) Add consolidated Family Savings items (biweekly on payday dates)
+  const names = bills.map(b => b.name);
+  if (!names.includes('Family Savings · Simplify')) {
+    bills.push({ id: uid(), name: 'Family Savings · Simplify', cat: '💰 Savings', amount: 10000, dueDay: null, group: 'savings', freq: 'biweekly-payday', paydayClient: 'Simplify Living',   status: 'unpaid', note: '₱10k per Blake/Simplify payday — 2×/month = ₱20k', created: Date.now() });
+    changed = true;
+  }
+  if (!names.includes('Family Savings · SCI')) {
+    bills.push({ id: uid(), name: 'Family Savings · SCI',      cat: '💰 Savings', amount: 20000, dueDay: null, group: 'savings', freq: 'biweekly-payday', paydayClient: 'Street Characters', status: 'unpaid', note: '₱20k per Glenn/SCI payday — 2×/month = ₱40k',     created: Date.now() });
+    changed = true;
+  }
+  if (!names.includes('Family Savings · Dojou')) {
+    bills.push({ id: uid(), name: 'Family Savings · Dojou',    cat: '💰 Savings', amount: 40000, dueDay: null, group: 'savings', freq: 'last-friday',     status: 'unpaid', note: 'Monthly family savings from Dojou income', created: Date.now() });
+    changed = true;
+  }
+
+  // 4) Fix Grocery: remove old day-8 entry, add two ₱9k entries on 15th and 30th
+  const oldGrocery = bills.find(b => b.name === 'Grocery' && b.dueDay === 8);
+  if (oldGrocery) { bills = bills.filter(b => !(b.name === 'Grocery' && b.dueDay === 8)); changed = true; }
+  if (!bills.find(b => b.name === 'Grocery' && b.dueDay === 15)) {
+    bills.push({ id: uid(), name: 'Grocery', cat: '🍔 Food', amount: 9000, dueDay: 15, group: 'food', freq: 'monthly', status: 'unpaid', note: 'Grocery run — 15th', created: Date.now() });
+    changed = true;
+  }
+  if (!bills.find(b => b.name === 'Grocery' && b.dueDay === 30)) {
+    bills.push({ id: uid(), name: 'Grocery', cat: '🍔 Food', amount: 9000, dueDay: 30, group: 'food', freq: 'monthly', status: 'unpaid', note: 'Grocery run — 30th', created: Date.now() });
+    changed = true;
+  }
+
+  if (changed) DB.save('bills', bills);
+  localStorage.setItem('pcrm4_patch_v5', '1');
+})();
+
+seedMoneyData();
+
+// Pre-load ClickUp token into CRM on startup (store it if not already there)
+(function() {
+  const existing = getCUToken();
+  if (!existing) {
+    localStorage.setItem('pcrm4_cu_token', 'pk_95055069_9CQTP15YG96VOFC9RQW9C1EI08R46TUC');
+  }
+  // Show sync button if token exists
+  const syncBtn = document.getElementById('sync-btn');
+  if (syncBtn && getCUToken()) syncBtn.style.display = 'inline-flex';
+})();
+
+renderDashboard();
+autoFetchRateIfStale(); // fetch live USD→PHP rate on load if stale
+
+// ─── AUTO-SYNC ─────────────────────────────────────────────────────────────
+// Runs ClickUp sync every 30 minutes automatically, Dojou every 60 minutes.
+// Silently updates tasks in the background — no popups unless you're watching.
+let _autoSyncInterval = null;
+
+function startAutoSync() {
+  if (_autoSyncInterval) clearInterval(_autoSyncInterval);
+  const enabled = localStorage.getItem('pcrm4_autosync') !== 'false'; // default on
+  if (!enabled) return;
+
+  const CLICKUP_MS = 10 * 60 * 1000;  // 10 minutes
+  const DOJOU_MS   = 20 * 60 * 1000;  // 20 minutes
+  let lastCU    = 0;
+  let lastDojou = 0;
+
+  _autoSyncInterval = setInterval(async () => {
+    const now = Date.now();
+    if (getCUToken() && (now - lastCU) >= CLICKUP_MS) {
+      lastCU = now;
+      await runClickUpSync().catch(() => {});
+    }
+    if (getDojouCreds().sessionCookie && (now - lastDojou) >= DOJOU_MS) {
+      lastDojou = now;
+      await runDojouSync().catch(() => {});
+    }
+  }, 60 * 1000); // check every minute, sync when interval elapsed
+}
+
+// Run first ClickUp sync 10 seconds after page load (background, silent)
+setTimeout(() => {
+  if (getCUToken()) runClickUpSync().catch(() => {});
+}, 10000);
+
+startAutoSync();
+
+// ── PWA: Register service worker for offline support ──────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
