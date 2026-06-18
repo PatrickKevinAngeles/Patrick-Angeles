@@ -513,6 +513,34 @@
   .status-overdue { background:#ff5c7a18; color:var(--red);    border:1px solid #ff5c7a44; }
 
   /* ════════════════════════════════════════════════════════
+     HAMBURGER BUTTON (mobile only)
+  ════════════════════════════════════════════════════════ */
+  #hamburger-btn {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Sidebar backdrop (mobile) */
+  #sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 199;
+    backdrop-filter: blur(2px);
+  }
+  #sidebar-backdrop.open { display: block; }
+
+  /* ════════════════════════════════════════════════════════
      BOTTOM NAV (mobile only — hidden on desktop)
   ════════════════════════════════════════════════════════ */
   #bottom-nav {
@@ -542,9 +570,23 @@
   ════════════════════════════════════════════════════════ */
   @media (max-width: 768px) {
 
-    /* Show bottom nav, hide sidebar */
+    /* Show bottom nav + hamburger */
     #bottom-nav { display: flex; }
-    #sidebar { display: none; }
+    #hamburger-btn { display: block; }
+
+    /* Sidebar becomes a slide-in drawer */
+    #sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 260px;
+      z-index: 200;
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+      overflow-y: auto;
+      min-width: 0;
+    }
+    #sidebar.drawer-open { transform: translateX(0); }
 
     /* Body stacks vertically, full height */
     body { flex-direction: column; height: 100dvh; overflow: hidden; }
@@ -688,9 +730,13 @@
   </div>
 </nav>
 
+<!-- Sidebar backdrop (mobile) -->
+<div id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
 <!-- MAIN -->
 <div id="main">
   <div id="topbar">
+    <button id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
     <h1 id="page-title">Dashboard</h1>
     <div class="topbar-right">
       <button class="btn secondary small" id="sync-btn" onclick="quickSync()" title="Sync ClickUp" style="display:none;">🔄 Sync</button>
@@ -1258,8 +1304,23 @@ function toast(msg) {
 const PAGE_TITLES = { dashboard:'Dashboard', projects:'Projects', tasks:'Tasks', communication:'Communication', 'client-dojou':'Dojou Media', 'client-simplify':'Simplify Living', sci:'Street Characters Inc.', money:'Money & Bills', integrations:'Integrations' };
 const ADD_LABELS  = { projects:'+ New Project', tasks:'+ New Task', communication:'+ Log', 'client-dojou':'+ Project', 'client-simplify':'+ Project', sci:'+ Task', money:'+ Bill', integrations:'+ (configure above)' };
 
+// ─── MOBILE DRAWER ─────────────────────────────────────────────────────────
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('drawer-open');
+  document.getElementById('sidebar-backdrop').classList.add('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('drawer-open');
+  document.getElementById('sidebar-backdrop').classList.remove('open');
+}
+function toggleSidebar() {
+  const open = document.getElementById('sidebar').classList.contains('drawer-open');
+  open ? closeSidebar() : openSidebar();
+}
+
 function navigateTo(page) {
   currentPage = page;
+  closeSidebar(); // close mobile drawer when navigating
   // sidebar highlight
   document.querySelectorAll('.nav-item').forEach(n => {
     n.classList.toggle('active', n.dataset.page === page);
