@@ -1,6 +1,6 @@
 // Patrick CRM — Service Worker
 // Caches the app for offline use. Version bump forces refresh.
-const CACHE = 'pcrm-v1';
+const CACHE = 'pcrm-v2';
 const ASSETS = ['./', './index.html', './manifest.json', './icon.png'];
 
 self.addEventListener('install', e => {
